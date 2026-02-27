@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/wauth-policy-context/v0.1",
+  "title": "WAUTH Policy Context v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "resource",
+    "request"
+  ],
+  "properties": {
+    "version": {
+      "const": "0.1"
+    },
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "RP/protected resource identifier"
+        },
+        "method": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      }
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "http": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "action_profile": {
+          "type": "string"
+        },
+        "action_instance": {
+          "type": "object"
+        },
+        "action_hash": {
+          "type": "string"
+        }
+      }
+    },
+    "caller": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "agent_id": {
+          "type": "string"
+        },
+        "client_id": {
+          "type": "string"
+        },
+        "presented_capability": {
+          "type": "object"
+        },
+        "presented_credentials": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "signals": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "risk": {
+          "type": "string"
+        },
+        "device": {
+          "type": "object"
+        },
+        "geo": {
+          "type": "object"
+        }
+      }
+    },
+    "time": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "now": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

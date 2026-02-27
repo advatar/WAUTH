@@ -1,0 +1,21 @@
+{
+  "vector_id": "wauth_binding_vector_01",
+  "version": "0.4",
+  "action_profile": "aaif.wauth.action.commerce.checkout_complete/v0.1",
+  "action_instance": {
+    "profile": "aaif.wauth.action.commerce.checkout_complete/v0.1",
+    "checkout_id": "chk_123",
+    "merchant": "did:web:merchant.example",
+    "currency": "USD",
+    "total_amount_minor": 99900
+  },
+  "action_hash": "sha256:_u04KM5stK5gT3NfZik5_ZtFpyaLRabRW0DL1DHdrHU",
+  "wauth_binding": {
+    "method": "rp_action_hash",
+    "hash_alg": "S256",
+    "action_profile": "aaif.wauth.action.commerce.checkout_complete/v0.1",
+    "action_hash": "sha256:_u04KM5stK5gT3NfZik5_ZtFpyaLRabRW0DL1DHdrHU",
+    "nonce": "rpn_abc123",
+    "expires_at": "2026-02-27T00:00:00Z"
+  }
+}

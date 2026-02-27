@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/wauth-result-envelope/v0.1",
+  "title": "WAUTH Result Envelope v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "requestId"
+  ],
+  "properties": {
+    "version": {
+      "const": "0.1"
+    },
+    "requestId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "format"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "minLength": 1
+          },
+          "format": {
+            "type": "string",
+            "minLength": 1
+          },
+          "inline": {
+            "type": [
+              "object",
+              "string",
+              "array",
+              "number",
+              "boolean",
+              "null"
+            ]
+          },
+          "ref": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "receipts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "meta": {
+      "type": "object"
+    }
+  }
+}

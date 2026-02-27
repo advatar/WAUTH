@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/binding/wauth-binding/v0.1",
+  "title": "WAUTH Binding Object (RP -> Client)",
+  "type": "object",
+  "required": [
+    "method",
+    "hash_alg",
+    "action_hash"
+  ],
+  "properties": {
+    "method": {
+      "type": "string",
+      "enum": [
+        "rp_action_hash"
+      ],
+      "description": "Binding method. rp_action_hash means the RP computed action_hash over the concrete request using action_profile."
+    },
+    "hash_alg": {
+      "type": "string",
+      "enum": [
+        "S256"
+      ],
+      "description": "Hash algorithm for action_hash."
+    },
+    "action_hash": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{16,}$",
+      "description": "base64url-encoded hash of canonical action instance computed by the RP."
+    },
+    "action_profile": {
+      "type": "string",
+      "description": "Action canonicalization profile used by the RP. SHOULD match action_profile in requirements template."
+    },
+    "challenge_id": {
+      "type": "string",
+      "description": "RP-generated challenge identifier to correlate the denial and subsequent authorized retry."
+    },
+    "nonce": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{8,}$",
+      "description": "Fresh nonce used to bind the challenge to a short time window."
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "transaction_id": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

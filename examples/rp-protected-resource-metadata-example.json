@@ -1,0 +1,31 @@
+{
+  "resource": "https://merchant.example/api",
+  "authorization_servers": [
+    "https://login.merchant.example"
+  ],
+  "bearer_methods_supported": [
+    "header"
+  ],
+  "scopes_supported": [
+    "checkout:read",
+    "checkout:complete"
+  ],
+  "wauth": {
+    "supported": true,
+    "profiles_supported": [
+      "aaif.wauth.profile.rp-protected-resource-metadata/v0.1",
+      "aaif.wauth.profile.rp-requirements-signaling/v0.1"
+    ],
+    "capability_formats_supported": [
+      "jwt+rfc9068"
+    ],
+    "authorization_details_types_supported": [
+      "https://schemas.aaif.io/wauth/rar/wauth-action-authorization-details/v0.1"
+    ],
+    "sender_constraint_methods_supported": [
+      "dpop"
+    ],
+    "requirements_uri": "https://merchant.example/.well-known/wauth-requirements",
+    "documentation_uri": "https://merchant.example/docs/wauth"
+  }
+}

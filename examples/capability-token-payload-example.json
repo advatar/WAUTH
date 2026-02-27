@@ -1,0 +1,41 @@
+{
+  "iss": "https://wauth.example",
+  "sub": "did:agent:abc123",
+  "aud": "https://merchant.example",
+  "exp": 1772204749,
+  "iat": 1772204449,
+  "jti": "cap-5d4d2c",
+  "cnf": {
+    "jkt": "w6JpQThumbprintExample"
+  },
+  "authorization_details": [
+    {
+      "type": "https://schemas.aaif.io/wauth/rar/wauth-action-authorization-details/v0.1",
+      "actions": [
+        "checkout_complete"
+      ],
+      "locations": [
+        "https://merchant.example/api/checkout/complete"
+      ],
+      "action_profile": "aaif.wauth.action.acp.checkout_complete/v0.1",
+      "hash_alg": "S256",
+      "action_hash": "mH7b0s6x5m2n4yT1k4pQeQ",
+      "envelope": {
+        "currency": "USD",
+        "max_amount_minor": 100000,
+        "merchant_id": "merchant_123",
+        "max_uses": 1
+      },
+      "assurance": {
+        "pohp": 2,
+        "pp_profile": "happ:eu-wallet",
+        "approved_at": "2026-02-27T15:00:49.572838Z"
+      },
+      "binding": {
+        "challenge_id": "wauth-chal-1f2d3c",
+        "nonce": "n0nc3YH2XhN0Vw",
+        "expires_at": "2026-02-27T15:05:49.572838Z"
+      }
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/wauth-prm-extension/v0.1",
+  "title": "WAUTH Protected Resource Metadata extension v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "supported",
+    "profiles_supported",
+    "authorization_details_types_supported",
+    "capability_formats_supported"
+  ],
+  "properties": {
+    "supported": {
+      "const": true
+    },
+    "profiles_supported": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "authorization_details_types_supported": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uri"
+      },
+      "minItems": 1
+    },
+    "capability_formats_supported": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1,
+      "description": "Examples: jwt+rfc9068, jwt"
+    },
+    "sender_constraint_methods_supported": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Examples: dpop, mtls"
+    },
+    "requirement_signaling_methods_supported": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Examples: wauth_required"
+    },
+    "requirements_uri": {
+      "type": "string",
+      "format": "uri"
+    },
+    "policy_uri": {
+      "type": "string",
+      "format": "uri"
+    },
+    "documentation_uri": {
+      "type": "string",
+      "format": "uri"
+    },
+    "gateway_profiles_supported": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

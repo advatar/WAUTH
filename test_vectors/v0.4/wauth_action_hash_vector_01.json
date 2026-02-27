@@ -1,0 +1,13 @@
+{
+  "vector_id": "wauth_action_hash_vector_01",
+  "version": "0.4",
+  "action_instance": {
+    "profile": "aaif.wauth.action.commerce.checkout_complete/v0.1",
+    "checkout_id": "chk_123",
+    "merchant": "did:web:merchant.example",
+    "currency": "USD",
+    "total_amount_minor": 99900
+  },
+  "jcs": "{\"checkout_id\":\"chk_123\",\"currency\":\"USD\",\"merchant\":\"did:web:merchant.example\",\"profile\":\"aaif.wauth.action.commerce.checkout_complete/v0.1\",\"total_amount_minor\":99900}",
+  "action_hash": "sha256:_u04KM5stK5gT3NfZik5_ZtFpyaLRabRW0DL1DHdrHU"
+}

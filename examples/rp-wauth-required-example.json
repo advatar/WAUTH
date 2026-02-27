@@ -1,0 +1,81 @@
+{
+  "error": "wauth_required",
+  "error_description": "Step-up required for checkout completion.",
+  "transaction_id": "rp-4b9c2c3a",
+  "authorization_details": [
+    {
+      "type": "https://schemas.aaif.io/wauth/rar/wauth-action-authorization-details/v0.1",
+      "actions": [
+        "checkout_complete"
+      ],
+      "locations": [
+        "https://merchant.example/api/checkout/complete"
+      ],
+      "action_profile": "aaif.wauth.action.acp.checkout_complete/v0.1",
+      "hash_alg": "S256",
+      "envelope": {
+        "currency": "USD",
+        "max_amount_minor": 100000,
+        "merchant_id": "merchant_123",
+        "max_uses": 1
+      },
+      "assurance": {
+        "min_pohp": 2,
+        "accepted_pp_profiles": [
+          "happ:eu-wallet",
+          "happ:iproov"
+        ],
+        "freshness_seconds": 300
+      }
+    }
+  ],
+  "wauth_requirements": {
+    "authorization_details": [
+      {
+        "type": "https://schemas.aaif.io/wauth/rar/wauth-action-authorization-details/v0.1",
+        "actions": [
+          "checkout_complete"
+        ],
+        "locations": [
+          "https://merchant.example/api/checkout/complete"
+        ],
+        "action_profile": "aaif.wauth.action.acp.checkout_complete/v0.1",
+        "hash_alg": "S256",
+        "envelope": {
+          "currency": "USD",
+          "max_amount_minor": 100000,
+          "merchant_id": "merchant_123",
+          "max_uses": 1
+        },
+        "assurance": {
+          "min_pohp": 2,
+          "accepted_pp_profiles": [
+            "happ:eu-wallet",
+            "happ:iproov"
+          ],
+          "freshness_seconds": 300
+        }
+      }
+    ],
+    "satisfy": "all",
+    "max_capability_ttl_seconds": 300
+  },
+  "wauth_binding": {
+    "method": "rp_action_hash",
+    "hash_alg": "S256",
+    "action_profile": "aaif.wauth.action.acp.checkout_complete/v0.1",
+    "action_hash": "mH7b0s6x5m2n4yT1k4pQeQ",
+    "challenge_id": "wauth-chal-1f2d3c",
+    "nonce": "n0nc3YH2XhN0Vw",
+    "issued_at": "2026-02-27T15:00:49.572838Z",
+    "expires_at": "2026-02-27T15:05:49.572838Z",
+    "transaction_id": "rp-4b9c2c3a"
+  },
+  "happ_challenge": {
+    "challenge_id": "happ-1f2d3c",
+    "binding": {
+      "transaction_id": "rp-4b9c2c3a",
+      "challenge_id": "wauth-chal-1f2d3c"
+    }
+  }
+}

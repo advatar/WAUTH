@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/wauth-envelope/v0.2",
+  "title": "WAUTH-ENVELOPE v0.2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "constraints"
+  ],
+  "properties": {
+    "version": {
+      "const": "0.2"
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "amount_minor": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "currency"
+          ],
+          "properties": {
+            "currency": {
+              "type": "string",
+              "pattern": "^[a-z]{3}$"
+            },
+            "min": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "max": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "max_total_amount_minor": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "currency"
+          ],
+          "properties": {
+            "currency": {
+              "type": "string",
+              "pattern": "^[a-z]{3}$"
+            },
+            "min": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "max": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "merchant_id": {
+          "$ref": "#/definitions/allowList"
+        },
+        "category": {
+          "$ref": "#/definitions/allowList"
+        },
+        "mcc": {
+          "$ref": "#/definitions/allowList"
+        },
+        "shipping_country": {
+          "$ref": "#/definitions/allowListCountry"
+        },
+        "audience": {
+          "$ref": "#/definitions/allowList"
+        },
+        "payment_provider": {
+          "$ref": "#/definitions/allowList"
+        },
+        "max_uses": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "le"
+          ],
+          "properties": {
+            "le": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    },
+    "extensions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "data"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "data": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "allowList": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "in"
+      ],
+      "properties": {
+        "in": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "allowListCountry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "in"
+      ],
+      "properties": {
+        "in": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}

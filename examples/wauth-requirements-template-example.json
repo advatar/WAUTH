@@ -1,0 +1,31 @@
+{
+  "authorization_details": [
+    {
+      "type": "https://schemas.aaif.io/wauth/rar/wauth-action-authorization-details/v0.1",
+      "actions": [
+        "checkout_complete"
+      ],
+      "locations": [
+        "https://merchant.example/api/checkout/complete"
+      ],
+      "action_profile": "aaif.wauth.action.acp.checkout_complete/v0.1",
+      "hash_alg": "S256",
+      "envelope": {
+        "currency": "USD",
+        "max_amount_minor": 100000,
+        "merchant_id": "merchant_123",
+        "max_uses": 1
+      },
+      "assurance": {
+        "min_pohp": 2,
+        "accepted_pp_profiles": [
+          "happ:eu-wallet",
+          "happ:iproov"
+        ],
+        "freshness_seconds": 300
+      }
+    }
+  ],
+  "satisfy": "all",
+  "max_capability_ttl_seconds": 300
+}

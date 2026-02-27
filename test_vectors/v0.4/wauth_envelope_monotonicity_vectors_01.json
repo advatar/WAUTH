@@ -1,0 +1,84 @@
+{
+  "vector_id": "wauth_envelope_monotonicity_vectors_01",
+  "version": "0.4",
+  "cases": [
+    {
+      "name": "child is subset (PASS)",
+      "parent": {
+        "version": "0.2",
+        "constraints": {
+          "amount_minor": {
+            "currency": "usd",
+            "max": 100000
+          },
+          "merchant_id": {
+            "in": [
+              "did:web:merchant.example",
+              "did:web:merchant2.example"
+            ]
+          },
+          "max_uses": {
+            "le": 10
+          }
+        }
+      },
+      "child": {
+        "version": "0.2",
+        "constraints": {
+          "amount_minor": {
+            "currency": "usd",
+            "max": 50000
+          },
+          "merchant_id": {
+            "in": [
+              "did:web:merchant.example"
+            ]
+          },
+          "max_uses": {
+            "le": 5
+          }
+        }
+      },
+      "expect": "pass"
+    },
+    {
+      "name": "currency changed (FAIL)",
+      "parent": {
+        "version": "0.2",
+        "constraints": {
+          "amount_minor": {
+            "currency": "usd",
+            "max": 100000
+          },
+          "merchant_id": {
+            "in": [
+              "did:web:merchant.example",
+              "did:web:merchant2.example"
+            ]
+          },
+          "max_uses": {
+            "le": 10
+          }
+        }
+      },
+      "child": {
+        "version": "0.2",
+        "constraints": {
+          "amount_minor": {
+            "currency": "eur",
+            "max": 50000
+          },
+          "merchant_id": {
+            "in": [
+              "did:web:merchant.example"
+            ]
+          },
+          "max_uses": {
+            "le": 5
+          }
+        }
+      },
+      "expect": "fail"
+    }
+  ]
+}

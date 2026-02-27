@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/wauth-policy-decision/v0.1",
+  "title": "WAUTH Policy Decision v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "decision"
+  ],
+  "properties": {
+    "version": {
+      "const": "0.1"
+    },
+    "decision": {
+      "enum": [
+        "permit",
+        "deny",
+        "wauth_required"
+      ]
+    },
+    "reason": {
+      "type": "string"
+    },
+    "obligations": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "wauth_required": {
+      "description": "When decision=wauth_required, return a template compatible with WAUTH-RP-REQSIG",
+      "$ref": "wauth-required.v0.2.schema.json"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "const": "wauth_required"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "wauth_required"
+        ]
+      }
+    }
+  ]
+}
