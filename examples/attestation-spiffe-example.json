@@ -1,0 +1,18 @@
+{
+  "version": "0.1",
+  "evidence_type": "spiffe_svid",
+  "issuer": "spiffe://example.org/spire/server",
+  "issued_at": "2026-02-28T10:00:00Z",
+  "expires_at": "2026-02-28T11:00:00Z",
+  "subject": "spiffe://example.org/ns/finance/sa/policy-bot",
+  "org_boundary": "finance-prod",
+  "software_digest": "sha256:abc123",
+  "key_binding": {
+    "jkt": "jkt_example_attested_key",
+    "alg": "ES256"
+  },
+  "claims": {
+    "node": "cluster-a/node-17",
+    "workload": "policy-bot"
+  }
+}

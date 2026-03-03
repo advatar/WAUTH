@@ -1,0 +1,21 @@
+{
+  "version": "0.1",
+  "agent_id": "did:web:agents.example:policy-bot",
+  "instance_id": "k8s://cluster-a/ns/payments/pod-7f5d",
+  "task_id": "task-20260228-001",
+  "owner": {
+    "id": "urn:enterprise:finance-team",
+    "type": "organization"
+  },
+  "org_boundary": "finance-prod",
+  "software_identity": {
+    "version": "1.7.3",
+    "image_digest": "sha256:abc123",
+    "signer": "cosign://agents.example/policy-bot"
+  },
+  "workload_identity": {
+    "type": "spiffe",
+    "value": "spiffe://example.org/ns/finance/sa/policy-bot"
+  },
+  "active_jkt": "jkt_example_attested_key"
+}

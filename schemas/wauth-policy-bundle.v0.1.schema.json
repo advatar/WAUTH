@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/policy/wauth-policy-bundle/v0.1",
+  "title": "WAUTH Policy Bundle",
+  "type": "object",
+  "required": [
+    "version",
+    "bundle_id",
+    "policy_language",
+    "rules"
+  ],
+  "properties": {
+    "version": {
+      "const": "0.1"
+    },
+    "bundle_id": {
+      "type": "string"
+    },
+    "policy_language": {
+      "enum": [
+        "cel",
+        "rego",
+        "cedar",
+        "ngac",
+        "custom"
+      ]
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "body"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "default_decision": {
+      "enum": [
+        "permit",
+        "deny",
+        "wauth_required"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

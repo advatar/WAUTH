@@ -1,0 +1,15 @@
+{
+  "version": "0.1",
+  "event_id": "life-rotate-001",
+  "event_type": "rotate",
+  "agent_id": "did:web:agents.example:policy-bot",
+  "occurred_at": "2026-02-28T12:00:00Z",
+  "actor": {
+    "id": "urn:admin:platform-security",
+    "type": "admin"
+  },
+  "reason": "scheduled key rotation",
+  "old_jkt": "jkt_old",
+  "new_jkt": "jkt_new",
+  "scim_reference": "https://iam.example/scim/v2/Users/2819"
+}

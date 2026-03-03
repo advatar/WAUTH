@@ -1,21 +1,21 @@
-# WAUTH RP Requirement Signaling (v0.1)
+# WAUTH (AAIF Wallet Authorization Protocol)
 
-This folder contains **drop-in JSON Schemas** and **examples** for an RP→Client signaling pattern:
+This repository contains the draft WAUTH specification, conformance notes, MCP profile, schemas, examples, test vectors, and website-supporting content.
 
-- RP denies an execution request with `error = "wauth_required"`.
-- RP includes an RFC 9396-compatible `authorization_details` array that describes the **required** authorization.
-- For per-request action binding, RP also includes a `wauth_binding` object with an `action_hash` computed by the RP over the concrete request.
-- The client obtains a short-lived capability token from a WAUTH Wallet Authorization Service (WAS), and retries the request with that token.
-- RP verifies: JWT signature + `aud` + `exp` + replay (`jti`) + PoP binding (`cnf.jkt` / DPoP) + `authorization_details` satisfy requirements + request hashes to `action_hash`.
+## Latest draft in this repository
 
-Files:
-- `schemas/wauth-required.v0.2.schema.json` — RP error response
-- `schemas/wauth-binding.v0.1.schema.json` — action binding object
-- `schemas/wauth-requirements.v0.1.schema.json` — requirements wrapper (non-OAuth contexts)
-- `schemas/wauth-action-requirements-details.v0.1.schema.json` — requirements template (action_hash optional)
-- `schemas/wauth-action-authorization-details.v0.1.schema.json` — granted capability (action_hash required)
+- Core spec: `specification/draft/wauth-v0.5.1.md`
+- Conformance: `specification/draft/conformance-v0.5.1.md`
+- MCP profile: `specification/draft/mcp-profile-v0.5.1.md`
 
-Examples:
-- `examples/rp-wauth-required-example.json` — full denial response
-- `examples/wauth-requirements-template-example.json` — reusable policy template
-- `examples/capability-token-payload-example.json` — JWT payload example carrying `authorization_details`
+## New in v0.5.1
+
+The core mandate/capability protocol remains intact. Version 0.5.1 adds optional operational-safety profiles for:
+
+- requester identity continuity and requester authorization
+- instruction source integrity / mutable memory controls
+- execution budgets and persistent side-effect controls
+- postcondition verification / tool receipts
+- multi-agent trust / anti-amplification
+
+See `docs/change-proposal-v0.5.1.md` for a concise summary of what changed and why.

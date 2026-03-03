@@ -1,0 +1,9 @@
+{
+  "source_agent_id": "did:agent:ash",
+  "target_agent_id": "did:agent:flux",
+  "relation": "peer",
+  "assertion_basis": "shared_channel",
+  "verified_independently": false,
+  "prohibits_transitive_trust": true,
+  "shared_channel_id": "discord:chan:coord-01"
+}

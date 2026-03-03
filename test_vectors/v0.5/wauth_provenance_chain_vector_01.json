@@ -1,0 +1,20 @@
+{
+  "description": "Example chained event sequence",
+  "events": [
+    {
+      "event_id": "evt1",
+      "prev_event_hash": null,
+      "event_hash": "hash1"
+    },
+    {
+      "event_id": "evt2",
+      "prev_event_hash": "hash1",
+      "event_hash": "hash2"
+    },
+    {
+      "event_id": "evt3",
+      "prev_event_hash": "hash2",
+      "event_hash": "hash3"
+    }
+  ]
+}

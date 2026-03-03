@@ -1,0 +1,13 @@
+{
+  "version": "0.1",
+  "bundle_id": "bundle-commerce-risk-v1",
+  "policy_language": "cel",
+  "rules": [
+    {
+      "name": "step_up_on_untrusted_checkout",
+      "description": "Require step-up when untrusted sources influence checkout",
+      "body": "risk.prompt_origin_trust != 'trusted' ? 'wauth_required' : 'permit'"
+    }
+  ],
+  "default_decision": "deny"
+}

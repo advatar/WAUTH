@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/wauth-agent-link/v0.1",
+  "title": "WAUTH Agent Link v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_agent_id",
+    "target_agent_id",
+    "relation",
+    "assertion_basis"
+  ],
+  "properties": {
+    "source_agent_id": {
+      "type": "string"
+    },
+    "target_agent_id": {
+      "type": "string"
+    },
+    "relation": {
+      "type": "string",
+      "enum": [
+        "advisor",
+        "tool",
+        "delegator",
+        "executor",
+        "peer",
+        "observer",
+        "other"
+      ]
+    },
+    "assertion_basis": {
+      "type": "string",
+      "enum": [
+        "explicit_delegation",
+        "observed_message",
+        "shared_channel",
+        "user_request",
+        "policy",
+        "other"
+      ]
+    },
+    "verified_independently": {
+      "type": "boolean"
+    },
+    "prohibits_transitive_trust": {
+      "type": "boolean"
+    },
+    "mandate_ref": {
+      "type": "string"
+    },
+    "capability_ref": {
+      "type": "string"
+    },
+    "shared_channel_id": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  }
+}

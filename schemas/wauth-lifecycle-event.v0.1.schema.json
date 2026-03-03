@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/lifecycle/wauth-lifecycle-event/v0.1",
+  "title": "WAUTH Lifecycle Event",
+  "type": "object",
+  "required": [
+    "version",
+    "event_id",
+    "event_type",
+    "agent_id",
+    "occurred_at"
+  ],
+  "properties": {
+    "version": {
+      "const": "0.1"
+    },
+    "event_id": {
+      "type": "string"
+    },
+    "event_type": {
+      "enum": [
+        "register",
+        "activate",
+        "rotate",
+        "suspend",
+        "resume",
+        "revoke",
+        "delete",
+        "owner_change",
+        "policy_change"
+      ]
+    },
+    "agent_id": {
+      "type": "string"
+    },
+    "instance_id": {
+      "type": "string"
+    },
+    "occurred_at": {
+      "type": "string"
+    },
+    "actor": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "reason": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "old_jkt": {
+      "type": "string"
+    },
+    "new_jkt": {
+      "type": "string"
+    },
+    "scim_reference": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

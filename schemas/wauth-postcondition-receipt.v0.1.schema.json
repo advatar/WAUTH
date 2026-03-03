@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/wauth-postcondition-receipt/v0.1",
+  "title": "WAUTH Postcondition Receipt v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "receipt_id",
+    "action_hash",
+    "claimed_success",
+    "verified_success"
+  ],
+  "properties": {
+    "receipt_id": {
+      "type": "string"
+    },
+    "action_hash": {
+      "type": "string"
+    },
+    "capability_jti": {
+      "type": "string"
+    },
+    "claimed_success": {
+      "type": "boolean"
+    },
+    "verified_success": {
+      "type": "boolean"
+    },
+    "verifier_type": {
+      "type": "string",
+      "enum": [
+        "rp",
+        "tool",
+        "secondary",
+        "operator",
+        "unknown"
+      ]
+    },
+    "observed_state_hash": {
+      "type": "string"
+    },
+    "postconditions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "check",
+          "status"
+        ],
+        "properties": {
+          "check": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "fail",
+              "unknown"
+            ]
+          },
+          "evidence_ref": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "side_effects": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

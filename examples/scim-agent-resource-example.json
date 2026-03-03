@@ -1,0 +1,18 @@
+{
+  "schemas": [
+    "urn:ietf:params:scim:schemas:core:2.0:User",
+    "https://schemas.aaif.io/wauth/scim/wauth-scim-agent-extension/v0.1"
+  ],
+  "userName": "policy-bot",
+  "active": true,
+  "https://schemas.aaif.io/wauth/scim/wauth-scim-agent-extension/v0.1": {
+    "agentId": "did:web:agents.example:policy-bot",
+    "state": "active",
+    "ownerRef": "urn:enterprise:finance-team",
+    "workloadProfile": "spiffe",
+    "kcsProfile": "tee",
+    "activeJkts": [
+      "jkt_example_attested_key"
+    ]
+  }
+}

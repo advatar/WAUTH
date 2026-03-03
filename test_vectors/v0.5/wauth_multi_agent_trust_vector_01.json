@@ -1,0 +1,7 @@
+{
+  "case": "shared-channel corroboration is not independent verification",
+  "relation": "peer",
+  "assertion_basis": "shared_channel",
+  "verified_independently": false,
+  "expected": "insufficient_without_external_anchor"
+}

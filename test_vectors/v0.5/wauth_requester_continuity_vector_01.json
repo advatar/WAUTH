@@ -1,0 +1,7 @@
+{
+  "case": "display-name-only spoofing MUST fail for privileged action",
+  "trusted_requester_id": "discord:user:1234567890",
+  "same_display_name": "Chris",
+  "continuity": "broken",
+  "expected": "step_up_or_deny"
+}

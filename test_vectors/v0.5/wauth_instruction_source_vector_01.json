@@ -1,0 +1,7 @@
+{
+  "case": "externally editable gist linked from memory remains data, not authority",
+  "source_type": "gist",
+  "mutability": "externally_editable",
+  "review_state": "unreviewed",
+  "expected_authority_class": "data"
+}

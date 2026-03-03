@@ -1,0 +1,6 @@
+{
+  "case": "agent claims success but verified outcome fails",
+  "claimed_success": true,
+  "verified_success": false,
+  "expected_status": "unverified_or_failed"
+}

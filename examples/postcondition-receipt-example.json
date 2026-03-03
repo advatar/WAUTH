@@ -1,0 +1,19 @@
+{
+  "receipt_id": "post-123",
+  "action_hash": "mH7b0s6x5m2n4yT1k4pQeQ",
+  "capability_jti": "cap-5d4d2c",
+  "claimed_success": true,
+  "verified_success": false,
+  "verifier_type": "tool",
+  "postconditions": [
+    {
+      "check": "file_deleted",
+      "status": "fail",
+      "evidence_ref": "log:fs:789"
+    }
+  ],
+  "side_effects": [
+    "filesystem_write"
+  ],
+  "created_at": "2026-03-02T12:05:00Z"
+}

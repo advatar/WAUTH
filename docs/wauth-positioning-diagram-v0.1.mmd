@@ -1,0 +1,27 @@
+flowchart TB
+  subgraph IdentityAndCredentials["Identity and credential layer"]
+    EUDI[EU Wallet / EUDI Wallet\nUser-held identity + attestations\nOpenID4VCI / OpenID4VP profiles]
+  end
+
+  subgraph WebAccess["Access and identity protocols"]
+    OAUTH[OAuth 2.0\nToken plumbing, resource access, delegation]
+    OIDC[OpenID Connect\nWho authenticated?\nIdentity claims / ID Token]
+  end
+
+  subgraph HumanApproval["Human approval layer"]
+    HAPP[HAPP\nStep-up human approval / presence\nQR / URL elicitation via MCP]
+  end
+
+  subgraph AgentAuthz["Agent authorization layer"]
+    WAUTH[WAUTH\nWhat may this agent do now?\nMandates + Capabilities + action_hash]
+  end
+
+  subgraph Execution["Execution boundary"]
+    RP[Relying Party / API / Endpoint\nVerifies capability, assurance, replay, audience, action binding]
+  end
+
+  EUDI -->|credentials, attestations, delegation sources| WAUTH
+  OAUTH -->|token substrate, RAR, token exchange, DPoP| WAUTH
+  OIDC -->|subject identity when needed| WAUTH
+  HAPP -->|fresh human approval evidence| WAUTH
+  WAUTH -->|portable authorization artifact| RP

@@ -1,0 +1,11 @@
+{
+  "source_id": "gist:constitution:1",
+  "uri": "https://gist.example/constitution",
+  "source_type": "gist",
+  "authority_class": "data",
+  "mutability": "externally_editable",
+  "loaded_as": "memory",
+  "signed": false,
+  "review_state": "unreviewed",
+  "notes": "Externally editable content MUST NOT become authoritative policy without promotion."
+}

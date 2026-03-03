@@ -1,0 +1,27 @@
+{
+  "version": "0.1",
+  "event_id": "evt-issue-cap-001",
+  "event_type": "capability_issued",
+  "created_at": "2026-02-28T12:05:00Z",
+  "agent_id": "did:web:agents.example:policy-bot",
+  "action_profile": "aaif.wauth.action.acp.checkout_complete/v0.1",
+  "action_hash": "mH7b0s6x5m2n4yT1k4pQeQ",
+  "mandate_ref": "mandate-123",
+  "capability_ref": "cap-456",
+  "human_auth_ref": "happ-cc-789",
+  "risk_ref": "risk-001",
+  "input_sources": [
+    {
+      "id": "prompt-hash:abc",
+      "trust": "user",
+      "hash": "abc"
+    },
+    {
+      "id": "bank-statement-2025",
+      "trust": "verified",
+      "hash": "def"
+    }
+  ],
+  "prev_event_hash": "prevhash123",
+  "event_hash": "eventhash456"
+}

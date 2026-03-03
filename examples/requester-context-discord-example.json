@@ -1,0 +1,18 @@
+{
+  "requester_id": "discord:user:1234567890",
+  "requester_type": "human",
+  "requester_roles": [
+    "owner"
+  ],
+  "channel_id": "discord:dm:abc",
+  "channel_type": "private_dm",
+  "session_id": "sess-001",
+  "continuity_method": "stable_platform_id",
+  "display_name": "Chris",
+  "local_handle": "Chris",
+  "non_authoritative_cues": [
+    "display_name",
+    "tone"
+  ],
+  "verified_at": "2026-03-02T12:00:00Z"
+}

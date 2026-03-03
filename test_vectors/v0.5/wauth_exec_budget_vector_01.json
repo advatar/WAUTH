@@ -1,0 +1,6 @@
+{
+  "case": "persistent cron job denied without explicit authority",
+  "may_create_persistent_process": false,
+  "requested_process_type": "cron",
+  "expected": "deny"
+}

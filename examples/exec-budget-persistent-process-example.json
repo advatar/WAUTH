@@ -1,0 +1,10 @@
+{
+  "budget_id": "budget-123",
+  "time_ms_max": 600000,
+  "token_max": 12000,
+  "process_max": 1,
+  "storage_bytes_max": 10485760,
+  "may_create_persistent_process": false,
+  "termination_condition_required": true,
+  "ttl_seconds": 900
+}
