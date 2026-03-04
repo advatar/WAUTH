@@ -437,6 +437,69 @@ pub fn build_wauth_request(args: Value, request_id: Option<&str>, namespace: Opt
     }))
 }
 
+pub fn build_wauth_oid4vp_request(
+    oid4vp_request: Value,
+    mode: Option<&str>,
+    response_uri: Option<&str>,
+    request_id: Option<&str>,
+    namespace: Option<&str>,
+) -> Value {
+    let mut args = serde_json::Map::new();
+    args.insert("oid4vpRequest".to_string(), oid4vp_request);
+    if let Some(value) = mode {
+        args.insert("mode".to_string(), Value::String(value.to_string()));
+    }
+    if let Some(value) = response_uri {
+        args.insert("response_uri".to_string(), Value::String(value.to_string()));
+    }
+    if let Some(value) = request_id {
+        args.insert("requestId".to_string(), Value::String(value.to_string()));
+    }
+
+    serde_json::json!({
+        "name": format!("{}.request", namespace.unwrap_or("aaif.wauth")),
+        "arguments": args
+    })
+}
+
+pub fn build_wauth_oid4vci_request(
+    oid4vci_offer: Value,
+    request_id: Option<&str>,
+    namespace: Option<&str>,
+) -> Value {
+    let mut args = serde_json::Map::new();
+    args.insert("oid4vciOffer".to_string(), oid4vci_offer);
+    if let Some(value) = request_id {
+        args.insert("requestId".to_string(), Value::String(value.to_string()));
+    }
+
+    serde_json::json!({
+        "name": format!("{}.request", namespace.unwrap_or("aaif.wauth")),
+        "arguments": args
+    })
+}
+
+pub fn build_wauth_reqsig_forwarding_request(
+    wauth_required: Value,
+    action_instance: Option<Value>,
+    request_id: Option<&str>,
+    namespace: Option<&str>,
+) -> Value {
+    let mut args = serde_json::Map::new();
+    args.insert("wauthRequired".to_string(), wauth_required);
+    if let Some(value) = action_instance {
+        args.insert("actionInstance".to_string(), value);
+    }
+    if let Some(value) = request_id {
+        args.insert("requestId".to_string(), Value::String(value.to_string()));
+    }
+
+    serde_json::json!({
+        "name": format!("{}.request", namespace.unwrap_or("aaif.wauth")),
+        "arguments": args
+    })
+}
+
 pub fn build_wauth_get(reference: &str, namespace: Option<&str>) -> Value {
     let namespace = namespace.unwrap_or("aaif.wauth");
     serde_json::json!({
@@ -445,6 +508,17 @@ pub fn build_wauth_get(reference: &str, namespace: Option<&str>) -> Value {
             "ref": reference
         }
     })
+}
+
+pub fn build_wauth_get_from_artifact(artifact: &Value, namespace: Option<&str>) -> Result<Value, String> {
+    let reference = artifact
+        .get("ref")
+        .and_then(Value::as_str)
+        .ok_or("WAUTH artifact must include a non-empty ref")?;
+    if reference.is_empty() {
+        return Err("WAUTH artifact must include a non-empty ref".to_string());
+    }
+    Ok(build_wauth_get(reference, namespace))
 }
 
 pub fn build_wauth_metadata(namespace: Option<&str>) -> Value {
@@ -489,6 +563,46 @@ pub fn parse_wauth_result_envelope(tool_result: &Value) -> Result<Value, String>
     Ok(content.clone())
 }
 
+pub fn parse_wauth_get_artifact(
+    tool_result: &Value,
+    expected_kind: Option<&str>,
+    expected_format: Option<&str>,
+) -> Result<Value, String> {
+    let content = resolve_structured_content(tool_result);
+    let obj = content
+        .as_object()
+        .ok_or("WAUTH get response must be a JSON object")?;
+
+    let kind = obj.get("kind").and_then(Value::as_str);
+    let format = obj.get("format").and_then(Value::as_str);
+    if kind.is_none() || format.is_none() {
+        return Err("WAUTH get response missing required fields: kind/format".to_string());
+    }
+
+    let has_inline = obj.contains_key("inline");
+    let has_ref = obj
+        .get("ref")
+        .and_then(Value::as_str)
+        .map(|v| !v.is_empty())
+        .unwrap_or(false);
+    if !has_inline && !has_ref {
+        return Err("WAUTH get response must include inline or ref".to_string());
+    }
+
+    if let Some(expected) = expected_kind {
+        if kind.unwrap() != expected {
+            return Err(format!("WAUTH get response kind mismatch: expected {}", expected));
+        }
+    }
+    if let Some(expected) = expected_format {
+        if format.unwrap() != expected {
+            return Err(format!("WAUTH get response format mismatch: expected {}", expected));
+        }
+    }
+
+    Ok(content.clone())
+}
+
 pub fn extract_artifact_refs(result_envelope: &Value) -> Vec<String> {
     let artifacts = match result_envelope.get("artifacts").and_then(Value::as_array) {
         Some(v) => v,
@@ -500,6 +614,13 @@ pub fn extract_artifact_refs(result_envelope: &Value) -> Vec<String> {
         .filter_map(|artifact| artifact.get("ref").and_then(Value::as_str))
         .map(str::to_string)
         .collect()
+}
+
+fn is_string_array(value: Option<&Value>) -> bool {
+    match value.and_then(Value::as_array) {
+        Some(values) => values.iter().all(Value::is_string),
+        None => false,
+    }
 }
 
 pub fn parse_wauth_metadata(tool_result: &Value) -> Result<Value, String> {
@@ -514,8 +635,75 @@ pub fn parse_wauth_metadata(tool_result: &Value) -> Result<Value, String> {
     if !obj.get("jwks_uri").map(Value::is_string).unwrap_or(false) {
         return Err("WAUTH metadata missing required field: jwks_uri".to_string());
     }
+    if !is_string_array(obj.get("wauth_versions_supported")) {
+        return Err("WAUTH metadata missing required string array: wauth_versions_supported".to_string());
+    }
+    if !is_string_array(obj.get("intent_versions_supported")) {
+        return Err("WAUTH metadata missing required string array: intent_versions_supported".to_string());
+    }
+    if !is_string_array(obj.get("profiles_supported")) {
+        return Err("WAUTH metadata missing required string array: profiles_supported".to_string());
+    }
+    if !is_string_array(obj.get("formats_supported")) {
+        return Err("WAUTH metadata missing required string array: formats_supported".to_string());
+    }
+
+    let mcp = obj
+        .get("mcp")
+        .and_then(Value::as_object)
+        .ok_or("WAUTH metadata missing required field: mcp")?;
+    if !is_string_array(mcp.get("tool_namespaces_supported")) {
+        return Err("WAUTH metadata missing required string array: mcp.tool_namespaces_supported".to_string());
+    }
+    if !is_string_array(mcp.get("tools_supported")) {
+        return Err("WAUTH metadata missing required string array: mcp.tools_supported".to_string());
+    }
 
     Ok(content.clone())
+}
+
+pub fn metadata_supports_tool(metadata: &Value, tool_name: &str) -> bool {
+    metadata
+        .get("mcp")
+        .and_then(Value::as_object)
+        .and_then(|mcp| mcp.get("tools_supported"))
+        .and_then(Value::as_array)
+        .map(|tools| tools.iter().any(|tool| tool.as_str() == Some(tool_name)))
+        .unwrap_or(false)
+}
+
+pub fn metadata_supports_namespace(metadata: &Value, namespace: &str) -> bool {
+    metadata
+        .get("mcp")
+        .and_then(Value::as_object)
+        .and_then(|mcp| mcp.get("tool_namespaces_supported"))
+        .and_then(Value::as_array)
+        .map(|namespaces| namespaces.iter().any(|item| item.as_str() == Some(namespace)))
+        .unwrap_or(false)
+}
+
+pub fn metadata_supports_profile(metadata: &Value, profile: &str) -> bool {
+    metadata
+        .get("profiles_supported")
+        .and_then(Value::as_array)
+        .map(|profiles| profiles.iter().any(|item| item.as_str() == Some(profile)))
+        .unwrap_or(false)
+}
+
+pub fn metadata_supports_format(metadata: &Value, format: &str) -> bool {
+    metadata
+        .get("formats_supported")
+        .and_then(Value::as_array)
+        .map(|formats| formats.iter().any(|item| item.as_str() == Some(format)))
+        .unwrap_or(false)
+}
+
+pub fn metadata_supports_wauth_version(metadata: &Value, version: &str) -> bool {
+    metadata
+        .get("wauth_versions_supported")
+        .and_then(Value::as_array)
+        .map(|versions| versions.iter().any(|item| item.as_str() == Some(version)))
+        .unwrap_or(false)
 }
 
 pub fn well_known_wauth_config_url(issuer: &str) -> String {

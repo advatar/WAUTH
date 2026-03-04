@@ -15,7 +15,11 @@ from wauth_sdk import (  # noqa: E402
     WauthSchemaRegistry,
     WauthJwksCache,
     build_wauth_get,
+    build_wauth_get_from_artifact,
     build_wauth_metadata,
+    build_wauth_oid4vci_request,
+    build_wauth_oid4vp_request,
+    build_wauth_reqsig_forwarding_request,
     build_wauth_request,
     canonicalize_jcs,
     check_envelope_monotonicity,
@@ -30,6 +34,12 @@ from wauth_sdk import (  # noqa: E402
     evaluate_risk_policy,
     extract_artifact_refs,
     extract_elicitations,
+    metadata_supports_format,
+    metadata_supports_namespace,
+    metadata_supports_profile,
+    metadata_supports_tool,
+    metadata_supports_wauth_version,
+    parse_wauth_get_artifact,
     parse_wauth_metadata,
     parse_wauth_result_envelope,
     verify_capability_jwt_with_jwks,
@@ -96,6 +106,49 @@ class TestVectors(unittest.TestCase):
         self.assertEqual(get_req, {"name": "aaif.wauth.get", "arguments": {"ref": "artifact://cap/123"}})
         self.assertEqual(metadata_req, {"name": "aaif.wauth.metadata", "arguments": {}})
 
+    def test_mcp_get_artifact_helpers(self):
+        get_req = build_wauth_get_from_artifact(
+            {"kind": "WAUTH-CAP", "format": "jwt", "ref": "artifact://cap/999"},
+        )
+        self.assertEqual(get_req, {"name": "aaif.wauth.get", "arguments": {"ref": "artifact://cap/999"}})
+
+        artifact = parse_wauth_get_artifact(
+            {
+                "structuredContent": {
+                    "kind": "WAUTH-CAP",
+                    "format": "jwt",
+                    "inline": {"token": "jwt-value"},
+                }
+            },
+            expected_kind="WAUTH-CAP",
+            expected_format="jwt",
+        )
+        self.assertEqual(artifact["kind"], "WAUTH-CAP")
+        self.assertEqual(artifact["format"], "jwt")
+
+    def test_mcp_mode_specific_builders(self):
+        vp_req = build_wauth_oid4vp_request(
+            "openid-vp://request",
+            mode="direct_post",
+            response_uri="https://wallet.example/response",
+            request_id="req-vp-1",
+        )
+        vci_req = build_wauth_oid4vci_request(
+            "openid-credential-offer://offer",
+            request_id="req-vci-1",
+        )
+        reqsig_req = build_wauth_reqsig_forwarding_request(
+            {"error": "insufficient_authorization"},
+            action_instance={"profile": "example-action", "amount_minor": 1000},
+            request_id="req-rpsig-1",
+        )
+
+        self.assertEqual(vp_req["arguments"]["mode"], "direct_post")
+        self.assertEqual(vp_req["arguments"]["requestId"], "req-vp-1")
+        self.assertEqual(vci_req["arguments"]["requestId"], "req-vci-1")
+        self.assertEqual(reqsig_req["arguments"]["requestId"], "req-rpsig-1")
+        self.assertEqual(reqsig_req["arguments"]["wauthRequired"], {"error": "insufficient_authorization"})
+
     def test_parse_result_and_metadata_envelopes(self):
         result = parse_wauth_result_envelope(
             {
@@ -130,6 +183,11 @@ class TestVectors(unittest.TestCase):
         )
         self.assertEqual(metadata["issuer"], "https://wauth.example")
         self.assertEqual(metadata["jwks_uri"], "https://wauth.example/jwks")
+        self.assertTrue(metadata_supports_tool(metadata, "aaif.wauth.request"))
+        self.assertTrue(metadata_supports_namespace(metadata, "aaif.wauth"))
+        self.assertTrue(metadata_supports_profile(metadata, "wauth-rp-reqsig/v0.1"))
+        self.assertTrue(metadata_supports_format(metadata, "jwt"))
+        self.assertTrue(metadata_supports_wauth_version(metadata, "0.5.1"))
 
     def test_elicitation_extraction(self):
         payload = {

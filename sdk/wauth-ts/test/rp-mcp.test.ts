@@ -3,10 +3,20 @@ import { describe, expect, it } from "vitest";
 import { wellKnownWauthConfigUrl } from "../src/discovery.js";
 import {
   buildWauthGet,
+  buildWauthGetFromArtifact,
   buildWauthMetadata,
+  buildWauthOid4vciRequest,
+  buildWauthOid4vpRequest,
+  buildWauthReqSigForwardingRequest,
   buildWauthRequest,
   extractArtifactRefs,
   extractElicitations,
+  metadataSupportsFormat,
+  metadataSupportsNamespace,
+  metadataSupportsProfile,
+  metadataSupportsTool,
+  metadataSupportsWauthVersion,
+  parseWauthGetArtifact,
   parseWauthMetadata,
   parseWauthResultEnvelope
 } from "../src/mcp.js";
@@ -30,6 +40,36 @@ describe("wauth-ts helpers", () => {
     });
   });
 
+  it("builds canonical mode-specific request shapes", () => {
+    const oid4vp = buildWauthOid4vpRequest(
+      {
+        oid4vpRequest: "openid-vp://request",
+        mode: "direct_post",
+        response_uri: "https://wallet.example/response"
+      },
+      { requestId: "req-vp-1" }
+    );
+    const oid4vci = buildWauthOid4vciRequest(
+      {
+        oid4vciOffer: "openid-credential-offer://offer"
+      },
+      { requestId: "req-vci-1" }
+    );
+    const reqsig = buildWauthReqSigForwardingRequest(
+      {
+        error: "insufficient_authorization"
+      },
+      { profile: "example-action", amount_minor: 1000 },
+      { requestId: "req-rpsig-1" }
+    );
+
+    expect(oid4vp.arguments.mode).toBe("direct_post");
+    expect(oid4vp.arguments.requestId).toBe("req-vp-1");
+    expect(oid4vci.arguments.requestId).toBe("req-vci-1");
+    expect(reqsig.arguments.requestId).toBe("req-rpsig-1");
+    expect(reqsig.arguments.wauthRequired).toEqual({ error: "insufficient_authorization" });
+  });
+
   it("extracts elicitations from error payload", () => {
     const payload = {
       code: -32042,
@@ -38,6 +78,31 @@ describe("wauth-ts helpers", () => {
       }
     };
     expect(extractElicitations(payload)).toHaveLength(1);
+  });
+
+  it("builds get calls from artifacts and parses get responses", () => {
+    const getRequest = buildWauthGetFromArtifact({
+      kind: "WAUTH-CAP",
+      format: "jwt",
+      ref: "artifact://cap/999"
+    });
+    expect(getRequest).toEqual({
+      name: "aaif.wauth.get",
+      arguments: { ref: "artifact://cap/999" }
+    });
+
+    const artifact = parseWauthGetArtifact(
+      {
+        structuredContent: {
+          kind: "WAUTH-CAP",
+          format: "jwt",
+          inline: { token: "jwt-value" }
+        }
+      },
+      { expectedKind: "WAUTH-CAP", expectedFormat: "jwt" }
+    );
+    expect(artifact.kind).toBe("WAUTH-CAP");
+    expect(artifact.format).toBe("jwt");
   });
 
   it("parses WAUTH result envelope and artifact refs", () => {
@@ -75,6 +140,11 @@ describe("wauth-ts helpers", () => {
 
     expect(metadata.issuer).toBe("https://wauth.example");
     expect(metadata.jwks_uri).toBe("https://wauth.example/jwks");
+    expect(metadataSupportsTool(metadata, "aaif.wauth.request")).toBe(true);
+    expect(metadataSupportsNamespace(metadata, "aaif.wauth")).toBe(true);
+    expect(metadataSupportsProfile(metadata, "wauth-rp-reqsig/v0.1")).toBe(true);
+    expect(metadataSupportsFormat(metadata, "jwt")).toBe(true);
+    expect(metadataSupportsWauthVersion(metadata, "0.5.1")).toBe(true);
   });
 
   it("validates capability claims for RP-side checks", () => {

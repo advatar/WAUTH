@@ -5,11 +5,14 @@ use std::fs;
 use std::path::PathBuf;
 
 use wauth_rs::{
-    build_wauth_get, build_wauth_metadata, build_wauth_request, decode_jwt_header,
-    decode_jwt_payload, extract_artifact_refs, extract_elicitations, parse_wauth_metadata,
-    parse_wauth_result_envelope, validate_against_schema, validate_capability_claims,
-    verify_capability_jwt_with_jwks, verify_jwt_with_jwks, well_known_wauth_config_url,
-    CapabilityValidationInput, WauthJwksCache,
+    build_wauth_get, build_wauth_get_from_artifact, build_wauth_metadata, build_wauth_oid4vci_request,
+    build_wauth_oid4vp_request, build_wauth_reqsig_forwarding_request, build_wauth_request,
+    decode_jwt_header, decode_jwt_payload, extract_artifact_refs, extract_elicitations,
+    metadata_supports_format, metadata_supports_namespace, metadata_supports_profile,
+    metadata_supports_tool, metadata_supports_wauth_version, parse_wauth_get_artifact,
+    parse_wauth_metadata, parse_wauth_result_envelope, validate_against_schema,
+    validate_capability_claims, verify_capability_jwt_with_jwks, verify_jwt_with_jwks,
+    well_known_wauth_config_url, CapabilityValidationInput, WauthJwksCache,
 };
 
 const RSA_PRIVATE_KEY_PEM: &str = r#"-----BEGIN PRIVATE KEY-----
@@ -99,6 +102,34 @@ fn build_mcp_requests() {
 }
 
 #[test]
+fn build_mode_specific_mcp_requests() {
+    let oid4vp = build_wauth_oid4vp_request(
+        json!("openid-vp://request"),
+        Some("direct_post"),
+        Some("https://wallet.example/response"),
+        Some("req-vp-1"),
+        None,
+    );
+    let oid4vci = build_wauth_oid4vci_request(
+        json!("openid-credential-offer://offer"),
+        Some("req-vci-1"),
+        None,
+    );
+    let reqsig = build_wauth_reqsig_forwarding_request(
+        json!({"error": "insufficient_authorization"}),
+        Some(json!({"profile": "example-action", "amount_minor": 1000})),
+        Some("req-rpsig-1"),
+        None,
+    );
+
+    assert_eq!(oid4vp["arguments"]["mode"], "direct_post");
+    assert_eq!(oid4vp["arguments"]["requestId"], "req-vp-1");
+    assert_eq!(oid4vci["arguments"]["requestId"], "req-vci-1");
+    assert_eq!(reqsig["arguments"]["requestId"], "req-rpsig-1");
+    assert_eq!(reqsig["arguments"]["wauthRequired"], json!({"error": "insufficient_authorization"}));
+}
+
+#[test]
 fn parse_result_and_metadata() {
     let result = json!({
         "structuredContent": {
@@ -133,6 +164,45 @@ fn parse_result_and_metadata() {
 
     assert_eq!(metadata["issuer"], "https://wauth.example");
     assert_eq!(metadata["jwks_uri"], "https://wauth.example/jwks");
+    assert!(metadata_supports_tool(&metadata, "aaif.wauth.request"));
+    assert!(metadata_supports_namespace(&metadata, "aaif.wauth"));
+    assert!(metadata_supports_profile(&metadata, "wauth-rp-reqsig/v0.1"));
+    assert!(metadata_supports_format(&metadata, "jwt"));
+    assert!(metadata_supports_wauth_version(&metadata, "0.5.1"));
+}
+
+#[test]
+fn parse_get_artifact_and_build_get_from_artifact() {
+    let get_request = build_wauth_get_from_artifact(
+        &json!({
+            "kind": "WAUTH-CAP",
+            "format": "jwt",
+            "ref": "artifact://cap/999"
+        }),
+        None,
+    )
+    .expect("failed to build get request from artifact");
+
+    assert_eq!(
+        get_request,
+        json!({"name": "aaif.wauth.get", "arguments": {"ref": "artifact://cap/999"}})
+    );
+
+    let artifact = parse_wauth_get_artifact(
+        &json!({
+            "structuredContent": {
+                "kind": "WAUTH-CAP",
+                "format": "jwt",
+                "inline": {"token": "jwt-value"}
+            }
+        }),
+        Some("WAUTH-CAP"),
+        Some("jwt"),
+    )
+    .expect("failed to parse get artifact");
+
+    assert_eq!(artifact["kind"], "WAUTH-CAP");
+    assert_eq!(artifact["format"], "jwt");
 }
 
 #[test]
