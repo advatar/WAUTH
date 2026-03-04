@@ -49,3 +49,6 @@ out/
 
 # Go
 bin/
+
+# Rust
+target/

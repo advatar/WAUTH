@@ -1,0 +1,51 @@
+{
+  "harness_version": "0.1.0",
+  "spec_target": "wauth-v0.5.1",
+  "suites": [
+    {
+      "id": "action_hash",
+      "vector": "test_vectors/v0.4/wauth_action_hash_vector_01.json",
+      "assertions": ["canonical_jcs", "action_hash"]
+    },
+    {
+      "id": "envelope_monotonicity",
+      "vector": "test_vectors/v0.4/wauth_envelope_monotonicity_vectors_01.json",
+      "assertions": ["pass_fail"]
+    },
+    {
+      "id": "requester_continuity",
+      "vector": "test_vectors/v0.5/wauth_requester_continuity_vector_01.json",
+      "assertions": ["decision"]
+    },
+    {
+      "id": "instruction_source",
+      "vector": "test_vectors/v0.5/wauth_instruction_source_vector_01.json",
+      "assertions": ["authority_class"]
+    },
+    {
+      "id": "execution_budget",
+      "vector": "test_vectors/v0.5/wauth_exec_budget_vector_01.json",
+      "assertions": ["decision"]
+    },
+    {
+      "id": "postcondition",
+      "vector": "test_vectors/v0.5/wauth_postcondition_vector_01.json",
+      "assertions": ["status"]
+    },
+    {
+      "id": "provenance_chain",
+      "vector": "test_vectors/v0.5/wauth_provenance_chain_vector_01.json",
+      "assertions": ["chain_valid"]
+    },
+    {
+      "id": "risk_policy",
+      "vector": "test_vectors/v0.5/wauth_risk_policy_vector_01.json",
+      "assertions": ["decision"]
+    },
+    {
+      "id": "multi_agent_trust",
+      "vector": "test_vectors/v0.5/wauth_multi_agent_trust_vector_01.json",
+      "assertions": ["decision"]
+    }
+  ]
+}

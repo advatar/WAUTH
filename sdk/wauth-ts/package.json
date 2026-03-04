@@ -1,0 +1,23 @@
+{
+  "name": "@aaif/wauth-ts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "WAUTH TypeScript SDK (initial conformance slice)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "jose": "^6.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.7"
+  }
+}

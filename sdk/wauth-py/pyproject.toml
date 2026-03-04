@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wauth-sdk"
+version = "0.1.0"
+description = "WAUTH Python SDK (initial conformance slice)"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "AAIF" }]
+dependencies = ["jsonschema>=4.23.0", "pyjwt[crypto]>=2.11.0"]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -19,3 +19,18 @@ The core mandate/capability protocol remains intact. Version 0.5.1 adds optional
 - multi-agent trust / anti-amplification
 
 See `docs/change-proposal-v0.5.1.md` for a concise summary of what changed and why.
+
+## SDK implementation workspace
+
+Initial multi-language SDK scaffolding now lives under `sdk/`:
+
+- `sdk/wauth-ts` (TypeScript)
+- `sdk/wauth-py` (Python)
+- `sdk/wauth-rs` (Rust)
+- `sdk/wauth-conformance` (shared fixture contract)
+
+Run all SDK tests with:
+
+```sh
+./sdk/run_conformance.sh
+```

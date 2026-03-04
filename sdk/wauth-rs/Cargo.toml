@@ -1,0 +1,17 @@
+[package]
+name = "wauth-rs"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "WAUTH Rust SDK (initial conformance slice)"
+
+[dependencies]
+base64 = "0.22"
+jsonschema = "0.18"
+jsonwebtoken = "9.3"
+serde_json = "1.0"
+sha2 = "0.10"
+ryu = "1.0"
+
+[dev-dependencies]
+serde = { version = "1.0", features = ["derive"] }

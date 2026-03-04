@@ -1,0 +1,56 @@
+{
+  "pairs": [
+    {
+      "example": "examples/agent-identity-spiffe-example.json",
+      "schema": "schemas/wauth-agent-identity.v0.1.schema.json"
+    },
+    {
+      "example": "examples/agent-link-example.json",
+      "schema": "schemas/wauth-agent-link.v0.1.schema.json"
+    },
+    {
+      "example": "examples/attestation-spiffe-example.json",
+      "schema": "schemas/wauth-attestation-evidence.v0.1.schema.json"
+    },
+    {
+      "example": "examples/exec-budget-persistent-process-example.json",
+      "schema": "schemas/wauth-exec-budget.v0.1.schema.json"
+    },
+    {
+      "example": "examples/instruction-source-gist-example.json",
+      "schema": "schemas/wauth-instruction-source.v0.1.schema.json"
+    },
+    {
+      "example": "examples/lifecycle-rotation-event-example.json",
+      "schema": "schemas/wauth-lifecycle-event.v0.1.schema.json"
+    },
+    {
+      "example": "examples/postcondition-receipt-example.json",
+      "schema": "schemas/wauth-postcondition-receipt.v0.1.schema.json"
+    },
+    {
+      "example": "examples/provenance-event-example.json",
+      "schema": "schemas/wauth-event.v0.1.schema.json"
+    },
+    {
+      "example": "examples/requester-context-discord-example.json",
+      "schema": "schemas/wauth-requester-context.v0.1.schema.json"
+    },
+    {
+      "example": "examples/risk-signals-example.json",
+      "schema": "schemas/wauth-risk-signals.v0.1.schema.json"
+    },
+    {
+      "example": "examples/rp-wauth-required-example.json",
+      "schema": "schemas/wauth-required.v0.2.schema.json"
+    },
+    {
+      "example": "examples/wauth-policy-bundle-example.json",
+      "schema": "schemas/wauth-policy-bundle.v0.1.schema.json"
+    },
+    {
+      "example": "examples/wauth-requirements-template-example.json",
+      "schema": "schemas/wauth-requirements.v0.1.schema.json"
+    }
+  ]
+}
