@@ -1,10 +1,11 @@
 # Status
 
-## Current Task: Build runnable TypeScript demo implementation
+## Current Task: Build end-to-end ChatGPT MCP demo backend
 
-- [x] Create `demo/wauth-demo-ts` TypeScript demo package scaffold with scripts/docs
-- [x] Implement in-memory WAS + MCP wallet app (`aaif.wauth.request/get/metadata`) using SDK helpers
-- [x] Implement mock Bank/Employer/IRS RPs with WAUTH lock behavior (`wauth_required` -> capability+DPoP retry)
-- [x] Implement end-to-end tax demo scenario runner and timeline/receipt outputs
-- [x] Add automated tests for the scenario and key acceptance criteria
-- [x] Run demo package tests + full SDK conformance suite
+- [x] Expose `aaif.wauth.request/get/metadata` tools in `demo/wauth-demo-ts` MCP server with persisted request/artifact state
+- [x] Add discovery/JWKS HTTP endpoints used by `aaif.wauth.metadata` (`/.well-known/aaif-wauth-configuration`, `/jwks`)
+- [x] Replace placeholder iProov URL with real demo approval endpoint and HTML approval flow
+- [x] Auto-advance workflow after approval so flow continues until the next required human checkpoint
+- [x] Add/extend tests for workflow progression and WAUTH MCP state transitions
+- [x] Update demo docs for ChatGPT end-to-end usage and approval URL behavior
+- [x] Validate with package tests and full SDK conformance suite

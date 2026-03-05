@@ -18,6 +18,7 @@ export {
   parseWauthGetArtifact,
   parseWauthMetadata,
   parseWauthResultEnvelope,
+  verifyCapabilityJwtWithJwks,
   verifyCapabilityRequestWithDpop,
   wellKnownWauthConfigUrl,
   type JsonValue,

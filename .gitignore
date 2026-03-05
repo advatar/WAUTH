@@ -42,6 +42,7 @@ dist/
 # Node
 node_modules/
 .pnpm-store/
+demo/wauth-demo-ts/.wauth-demo/
 
 # Java
 *.class
