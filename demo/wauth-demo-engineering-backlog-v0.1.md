@@ -389,3 +389,112 @@ Mitigation: maintain one architecture source and one sequence source in Mermaid,
 - Backup HAPP path available
 - Presenter narrative rehearsed
 - Screenshots / recordings captured for fallback
+
+## 11. TypeScript SDK-mapped implementation checklist
+This checklist maps demo work directly to `sdk/wauth-ts` APIs so implementation can proceed without re-deriving protocol primitives in each service.
+
+### 11.1 Foundation setup
+- [ ] Add shared `wauth-sdk.ts` import barrel in demo services:
+  - `computeActionHash`, `checkEnvelopeMonotonicity`
+  - `buildWauthRequest`, `buildWauthReqSigForwardingRequest`, `buildWauthOid4vpRequest`, `buildWauthOid4vciRequest`
+  - `parseWauthResultEnvelope`, `parseWauthGetArtifact`, `extractArtifactRefs`, `extractElicitations`
+  - `parseWauthMetadata`, `metadataSupportsTool`, `metadataSupportsNamespace`, `metadataSupportsProfile`
+  - `verifyCapabilityJwtWithJwks`, `validateCapabilityClaims`
+  - `verifyCapabilityRequestWithDpop`
+  - `WauthJwksCache`, `wellKnownWauthConfigUrl`
+  - `createDpopProof`, `verifyDpopProof`, `extractConfirmationJkt`, `buildBearerDpopAuthorizationHeader`, `InMemoryReplayGuard`
+  - `WauthSchemaRegistry`
+- [ ] Create shared config constants:
+  - issuer URL
+  - RP audience URIs per endpoint
+  - supported WAUTH profiles and formats
+  - skew/replay TTL defaults
+
+### 11.2 Workstream A (Wallet App / MCP)
+- [ ] Implement `aaif.wauth.request` call builder path using:
+  - `buildWauthRequest` for generic intents
+  - `buildWauthReqSigForwardingRequest` for RP `wauth_required` forwarding
+  - `buildWauthOid4vpRequest` and `buildWauthOid4vciRequest` for optional wallet flows
+- [ ] Implement `aaif.wauth.get` artifact retrieval path using:
+  - `extractArtifactRefs` from `parseWauthResultEnvelope`
+  - `buildWauthGetFromArtifact` and `parseWauthGetArtifact`
+- [ ] Implement `aaif.wauth.metadata` preflight on startup using:
+  - `buildWauthMetadata`, `parseWauthMetadata`
+  - `metadataSupportsTool` and `metadataSupportsNamespace` for compatibility gates
+- [ ] Add MCP error handling for user interaction:
+  - parse `-32042` payloads with `extractElicitations`
+  - retry with stable `requestId`
+
+### 11.3 Workstream B (WAS / PWMA core)
+- [ ] Enforce deterministic action binding using:
+  - `computeActionHash` for action instance hashing
+  - same profile extraction code path in WAS and RP
+- [ ] Validate request/response payloads against local schemas using:
+  - `WauthSchemaRegistry.validateByFileName` for `wauth-required`, result envelope, and profile payloads
+- [ ] Publish discovery/JWKS endpoints and client helper wiring:
+  - `wellKnownWauthConfigUrl`
+  - `WauthJwksCache.fetchMetadata` / `getForIssuer` / `getForKid`
+
+### 11.4 Workstream D + F (KCS and RP lock enforcement)
+- [ ] Capability JWT verification:
+  - `verifyCapabilityJwtWithJwks` for signature + issuer/audience/action-hash checks
+  - fallback claim diagnostics via `validateCapabilityClaims`
+- [ ] Sender-constrained retries (DPoP):
+  - generate proof with `createDpopProof`
+  - attach `Authorization` with `buildBearerDpopAuthorizationHeader`
+  - verify end-to-end at RP with `verifyCapabilityRequestWithDpop` (or raw `verifyDpopProof` when needed)
+  - enforce `cnf.jkt` binding using `extractConfirmationJkt` + `verifyDpopProof.expectedJkt`
+- [ ] Replay prevention:
+  - capability replay cache keyed by `(iss, jti)` from verification results
+  - DPoP replay cache using `InMemoryReplayGuard` (replace with shared store for multi-instance RP)
+- [ ] Envelope narrowing checks for sub-agent or down-scoped capabilities:
+  - `checkEnvelopeMonotonicity(parentEnvelope, childEnvelope)`
+
+### 11.5 Workstream C + E (Credential store + phone step-up)
+- [ ] Store returned artifacts/receipts by `ref` and inline payload type from parsed result envelopes.
+- [ ] For step-up loops:
+  - surface elicitation `url`/`qrPayload` to widget and phone flow
+  - persist `requestId` and resume after approval with identical request payload
+
+### 11.6 Workstream G (Safety vignettes)
+- [ ] Requester continuity vignette uses `evaluateRequesterContinuity`.
+- [ ] Instruction source vignette uses `evaluateInstructionSource`.
+- [ ] Execution budget vignette uses `evaluateExecutionBudget`.
+- [ ] Postcondition vignette uses `evaluatePostcondition`.
+- [ ] Multi-agent trust vignette uses `evaluateMultiAgentTrust`.
+- [ ] Provenance integrity vignette uses `validateProvenanceChain`.
+- [ ] Risk-policy vignette uses `evaluateRiskPolicy`.
+
+### 11.7 Workstream H (Operator and observability)
+- [ ] Emit timeline events containing:
+  - request IDs
+  - capability `jti`
+  - computed `action_hash`
+  - DPoP `jti` and `jkt`
+  - approval event references
+- [ ] Add inspector actions:
+  - decode capability JWT (`decodeJwtHeader`, `decodeJwtPayload`)
+  - inspect WAUTH metadata capability matrix
+  - clear local JWKS/replay caches for reset
+
+### 11.8 Missing SDK functionality closed for demo use
+- [x] DPoP helper layer added in TypeScript SDK:
+  - proof creation: `createDpopProof`
+  - proof verification: `verifyDpopProof`
+  - token binding extraction: `extractConfirmationJkt`
+  - replay helper: `InMemoryReplayGuard`
+  - auth header helper: `buildBearerDpopAuthorizationHeader`
+
+### 11.9 Minimum end-to-end acceptance sequence (SDK-level)
+- [ ] Bank flow:
+  - RP returns `wauth_required`
+  - wallet request built with `buildWauthReqSigForwardingRequest`
+  - result envelope parsed and capability retrieved
+  - retry succeeds with capability + DPoP
+- [ ] Employer flow:
+  - same enforcement path as Bank with different `aud` and endpoint
+- [ ] IRS submit flow:
+  - RP computes `action_hash` via `computeActionHash`
+  - capability verification checks exact `action_hash`
+  - DPoP proof must pass and match `cnf.jkt`
+  - receipt artifact persisted and rendered

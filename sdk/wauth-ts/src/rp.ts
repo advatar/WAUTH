@@ -1,6 +1,8 @@
 import type { JSONWebKeySet } from "jose";
 
 import type { JsonValue } from "./types.js";
+import type { ReplayGuard } from "./dpop.js";
+import { extractConfirmationJkt, verifyDpopProof, type DpopVerificationResult } from "./dpop.js";
 import { verifyJwtWithJwks } from "./jwt.js";
 
 export interface CapabilityValidationInput {
@@ -31,6 +33,37 @@ export interface CapabilityJwtVerificationInput {
 export interface CapabilityJwtVerificationResult extends CapabilityValidationResult {
   claims?: Record<string, JsonValue>;
   header?: Record<string, JsonValue>;
+}
+
+export interface CapabilityRequestVerificationInput extends CapabilityJwtVerificationInput {
+  dpopProof: string;
+  requestMethod: string;
+  requestUrl: string;
+  dpopNonce?: string;
+  capabilityReplayGuard?: ReplayGuard;
+  dpopReplayGuard?: ReplayGuard;
+}
+
+export interface CapabilityRequestVerificationResult extends CapabilityJwtVerificationResult {
+  dpop?: DpopVerificationResult;
+}
+
+function consumeCapabilityReplay(
+  guard: ReplayGuard | undefined,
+  claims: Record<string, JsonValue> | undefined,
+  replayKey: string | undefined
+): string | undefined {
+  if (!guard || !replayKey) {
+    return undefined;
+  }
+
+  const issuer = typeof claims?.iss === "string" ? claims.iss : "unknown";
+  const compositeReplayKey = `cap:${issuer}:${replayKey}`;
+  const expiresAt = typeof claims?.exp === "number" ? claims.exp : undefined;
+  if (!guard.consume(compositeReplayKey, expiresAt)) {
+    return "capability token replay detected";
+  }
+  return undefined;
 }
 
 function audienceIncludes(audClaim: JsonValue | undefined, expectedAudience: string): boolean {
@@ -115,5 +148,56 @@ export async function verifyCapabilityJwtWithJwks(
     replayKey: claimResult.replayKey ?? jwtResult.replayKey,
     claims: jwtResult.claims,
     header: jwtResult.header as unknown as Record<string, JsonValue>
+  };
+}
+
+export async function verifyCapabilityRequestWithDpop(
+  input: CapabilityRequestVerificationInput
+): Promise<CapabilityRequestVerificationResult> {
+  const capability = await verifyCapabilityJwtWithJwks({
+    token: input.token,
+    jwks: input.jwks,
+    expectedIssuer: input.expectedIssuer,
+    expectedAudience: input.expectedAudience,
+    expectedActionHash: input.expectedActionHash,
+    nowEpochSeconds: input.nowEpochSeconds,
+    maxClockSkewSeconds: input.maxClockSkewSeconds,
+    allowedAlgorithms: input.allowedAlgorithms
+  });
+
+  const errors = [...capability.errors];
+  const replayError = consumeCapabilityReplay(
+    input.capabilityReplayGuard,
+    capability.claims,
+    capability.replayKey
+  );
+  if (replayError) {
+    errors.push(replayError);
+  }
+
+  const expectedJkt = capability.claims
+    ? extractConfirmationJkt(capability.claims)
+    : undefined;
+
+  const dpop = await verifyDpopProof({
+    proof: input.dpopProof,
+    htm: input.requestMethod,
+    htu: input.requestUrl,
+    accessToken: input.token,
+    expectedNonce: input.dpopNonce,
+    expectedJkt,
+    nowEpochSeconds: input.nowEpochSeconds,
+    maxIatSkewSeconds: input.maxClockSkewSeconds,
+    replayGuard: input.dpopReplayGuard
+  });
+  errors.push(...dpop.errors);
+
+  return {
+    ok: capability.ok && dpop.ok && errors.length === 0,
+    errors,
+    replayKey: capability.replayKey,
+    claims: capability.claims,
+    header: capability.header,
+    dpop
   };
 }

@@ -1,10 +1,9 @@
 # Status
 
-## Current Task: SDK protocol helper completion
+## Current Task: Demo checklist and TypeScript SDK coverage for demo build
 
-- [x] Add mode-specific MCP request helper builders in TypeScript (`oid4vp`, `oid4vci`, reqsig forwarding)
-- [x] Add equivalent mode-specific MCP request helper builders in Python
-- [x] Add equivalent mode-specific MCP request helper builders in Rust
-- [x] Add richer `aaif.wauth.get` / `aaif.wauth.metadata` helper options consistently across SDKs
-- [x] Add/extend unit tests for new MCP helper behavior in all SDKs
+- [x] Map `demo/wauth-demo-engineering-backlog-v0.1.md` requirements to current TypeScript SDK API
+- [x] Add missing TypeScript SDK helper coverage required for demo build (DPoP proof create/verify + token binding and replay utilities)
+- [x] Add/extend TypeScript unit tests for new demo-critical helpers
+- [x] Add a detailed SDK-mapped implementation checklist to the demo backlog document
 - [x] Run full SDK conformance test suite

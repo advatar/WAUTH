@@ -11,6 +11,12 @@ TypeScript WAUTH SDK (initial slice).
 - MCP helper functions (`aaif.wauth.request`, `aaif.wauth.get`, `aaif.wauth.metadata`) plus envelope/metadata parsers.
 - RP helper for claim-level capability checks (`aud`, `exp`, `iat`, `jti`, `action_hash`).
 - JWT/JWKS signature verification helper with issuer/audience/alg checks.
+- DPoP helper layer for sender-constrained requests:
+  - proof creation (`createDpopProof`)
+  - proof verification (`verifyDpopProof`)
+  - capability + DPoP combined verification (`verifyCapabilityRequestWithDpop`)
+  - `cnf.jkt` extraction (`extractConfirmationJkt`)
+  - replay helper (`InMemoryReplayGuard`)
 - JWKS discovery cache helper with TTL and key-rotation refresh behavior.
 - Discovery helper for `/.well-known/aaif-wauth-configuration` URL derivation.
 - JSON Schema validation registry with local/offline schema resolution.

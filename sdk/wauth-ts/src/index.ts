@@ -9,3 +9,4 @@ export * from "./discovery.js";
 export * from "./jwks.js";
 export * from "./schema.js";
 export * from "./jwt.js";
+export * from "./dpop.js";

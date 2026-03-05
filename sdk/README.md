@@ -19,6 +19,7 @@ This directory contains the first implementation slice for multi-language WAUTH 
 - Extended MCP helper APIs for `aaif.wauth.get` and `aaif.wauth.metadata`.
 - RP claim-level capability checks (`aud`, `exp`, `iat`, `jti`, `action_hash`).
 - JWT/JWKS signature verification helpers for RP-CORE and discovery.
+- DPoP proof create/verify helpers for sender-constrained RP flows.
 - Discovery URL helper for WAUTH well-known configuration.
 - JSON Schema validation helpers.
 
