@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/wauth-metadata/v0.4",
+  "title": "WAUTH-CONFIG (metadata) v0.4",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "issuer",
+    "jwks_uri",
+    "wauth_versions_supported",
+    "intent_versions_supported",
+    "profiles_supported",
+    "formats_supported",
+    "mcp"
+  ],
+  "properties": {
+    "issuer": {
+      "type": "string",
+      "format": "uri"
+    },
+    "jwks_uri": {
+      "type": "string",
+      "format": "uri"
+    },
+    "wauth_versions_supported": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "intent_versions_supported": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "profiles_supported": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "vault_profiles_supported": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "formats_supported": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "mcp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tool_namespaces_supported",
+        "tools_supported"
+      ],
+      "properties": {
+        "tool_namespaces_supported": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "tools_supported": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "features": {
+      "type": "object"
+    },
+    "pwma_versions_supported": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "mcp.tool_namespace": {
+      "type": "string"
+    }
+  }
+}

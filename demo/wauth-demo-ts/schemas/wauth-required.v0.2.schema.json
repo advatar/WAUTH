@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/errors/wauth-required/v0.2",
+  "title": "WAUTH Required Error (RP -> Client)",
+  "type": "object",
+  "required": [
+    "error",
+    "authorization_details"
+  ],
+  "properties": {
+    "error": {
+      "type": "string",
+      "const": "wauth_required",
+      "description": "Indicates the request cannot be executed without WAUTH authorization."
+    },
+    "error_description": {
+      "type": "string"
+    },
+    "error_uri": {
+      "type": "string",
+      "format": "uri"
+    },
+    "transaction_id": {
+      "type": "string"
+    },
+    "authorization_details": {
+      "type": "array",
+      "minItems": 1,
+      "description": "RFC 9396 authorization_details describing the minimum acceptable authorization (requirements template).",
+      "items": {
+        "$ref": "https://schemas.aaif.io/wauth/rar/wauth-action-requirements-details/v0.1"
+      }
+    },
+    "wauth_requirements": {
+      "$ref": "https://schemas.aaif.io/wauth/requirements/wauth-requirements/v0.1",
+      "description": "Optional wrapper form. If present, wauth_requirements.authorization_details MUST be identical (semantic equality) to authorization_details."
+    },
+    "wauth_binding": {
+      "$ref": "https://schemas.aaif.io/wauth/binding/wauth-binding/v0.1",
+      "description": "Per-request binding computed by RP for safe action_hash binding."
+    },
+    "happ_challenge": {
+      "type": "object",
+      "description": "Optional HAPP challenge object (opaque to WAUTH).",
+      "additionalProperties": true
+    },
+    "wauth_server": {
+      "type": "object",
+      "description": "Optional hint about where to obtain a capability (if discovery is not used).",
+      "properties": {
+        "configuration_uri": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

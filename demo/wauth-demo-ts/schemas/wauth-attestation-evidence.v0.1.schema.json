@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/agent/wauth-attestation-evidence/v0.1",
+  "title": "WAUTH Attestation Evidence",
+  "type": "object",
+  "required": [
+    "version",
+    "evidence_type",
+    "issuer",
+    "issued_at",
+    "subject",
+    "key_binding"
+  ],
+  "properties": {
+    "version": {
+      "const": "0.1"
+    },
+    "evidence_type": {
+      "enum": [
+        "spiffe_svid",
+        "x509",
+        "tee_report",
+        "tpm_quote",
+        "software_signing",
+        "custom"
+      ]
+    },
+    "issuer": {
+      "type": "string"
+    },
+    "issued_at": {
+      "type": "string"
+    },
+    "expires_at": {
+      "type": "string"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "org_boundary": {
+      "type": "string"
+    },
+    "software_digest": {
+      "type": "string"
+    },
+    "key_binding": {
+      "type": "object",
+      "required": [
+        "jkt"
+      ],
+      "properties": {
+        "jkt": {
+          "type": "string"
+        },
+        "alg": {
+          "type": "string"
+        }
+      }
+    },
+    "claims": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

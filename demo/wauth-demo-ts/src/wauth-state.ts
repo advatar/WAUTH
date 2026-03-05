@@ -40,7 +40,7 @@ N/krUAe1w63HWnwoIG6VWNqK77iem6g/j4YVwI8knj730qChrBqw5aAM5r9mjV/x
 wI4lKRQAb/06ouNhRyw4KQ==
 -----END PRIVATE KEY-----`;
 
-const SIGNING_PUBLIC_JWK: JsonWebKey = {
+const SIGNING_PUBLIC_JWK = {
   kty: "RSA",
   n: "hUcWsAzj9HlHMklYN5eNveveSwycdRCllPY2Csl8TnqPv-9jCXsypph3tz843uvamRLWd9uOkG04VquhwXPwtXBZLxydXGocUcB1Xz16DLKVot3O7P2w8Pfb5sxgAFI2A3tyMV4V7WNfOjKGp4KuneuRDdgc10Bv5IXTjO09kzCS3z_r2baRqWDT2YTcKUbnSb70kfd10YS-Ij0Y96QKra4tH-C4rdcOZxGDZwkhe4uuIeSriIvQDVLbpCWSQPIj2jnwVCHczJzIR8RJALZUuSyvhLiY8f3VgliuunGjd0hJlgYJ3reUUtpriTcAXY4fCuv5KB_d8T4u7WlapTNvYw",
   e: "AQAB",

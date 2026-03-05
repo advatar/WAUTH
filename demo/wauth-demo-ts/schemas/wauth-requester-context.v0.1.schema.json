@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/wauth-requester-context/v0.1",
+  "title": "WAUTH Requester Context v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "requester_id",
+    "requester_type"
+  ],
+  "properties": {
+    "requester_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requester_type": {
+      "type": "string",
+      "enum": [
+        "human",
+        "service",
+        "agent",
+        "unknown"
+      ]
+    },
+    "requester_roles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "channel_id": {
+      "type": "string"
+    },
+    "channel_type": {
+      "type": "string"
+    },
+    "session_id": {
+      "type": "string"
+    },
+    "continuity_method": {
+      "type": "string",
+      "enum": [
+        "stable_platform_id",
+        "verified_channel_binding",
+        "delegation",
+        "step_up",
+        "mTLS",
+        "federated_subject",
+        "unknown"
+      ]
+    },
+    "verified_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "local_handle": {
+      "type": "string"
+    },
+    "non_authoritative_cues": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "assertions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "step_up_ref": {
+      "type": "string"
+    }
+  }
+}

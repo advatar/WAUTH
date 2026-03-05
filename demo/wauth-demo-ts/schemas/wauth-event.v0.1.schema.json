@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/audit/wauth-event/v0.1",
+  "title": "WAUTH Event",
+  "type": "object",
+  "required": [
+    "version",
+    "event_id",
+    "event_type",
+    "created_at",
+    "agent_id",
+    "event_hash"
+  ],
+  "properties": {
+    "version": {
+      "const": "0.1"
+    },
+    "event_id": {
+      "type": "string"
+    },
+    "event_type": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "agent_id": {
+      "type": "string"
+    },
+    "instance_id": {
+      "type": "string"
+    },
+    "action_profile": {
+      "type": "string"
+    },
+    "action_hash": {
+      "type": "string"
+    },
+    "mandate_ref": {
+      "type": "string"
+    },
+    "capability_ref": {
+      "type": "string"
+    },
+    "human_auth_ref": {
+      "type": "string"
+    },
+    "risk_ref": {
+      "type": "string"
+    },
+    "input_sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "trust": {
+            "type": "string"
+          },
+          "hash": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "prev_event_hash": {
+      "type": "string"
+    },
+    "event_hash": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

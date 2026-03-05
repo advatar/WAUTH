@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
-import { SignJWT, exportJWK, generateKeyPair, type JWK, type KeyLike } from "jose";
+import { existsSync } from "node:fs";
+import { SignJWT, exportJWK, generateKeyPair, type JWK } from "jose";
 
 import {
   InMemoryReplayGuard,
@@ -119,6 +120,16 @@ function computeProtocolActionHash(actionInstance: Record<string, JsonValue>): s
   return normalizeActionHash(computeActionHash(actionInstance));
 }
 
+function resolveSchemaDirectory(): string {
+  const demoLocal = resolve(fileURLToPath(new URL("..", import.meta.url)), "schemas");
+  if (existsSync(demoLocal)) {
+    return demoLocal;
+  }
+
+  const repoRoot = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
+  return resolve(repoRoot, "schemas");
+}
+
 function extractTokenFromArtifact(artifact: WauthArtifact): string {
   if (typeof artifact.inline === "string" && artifact.inline.length > 0) {
     return artifact.inline;
@@ -193,12 +204,12 @@ class DemoCredentialStore {
 }
 
 class DemoKcs {
-  private readonly privateKey: KeyLike;
+  private readonly privateKey: CryptoKey;
   readonly publicJwk: JWK;
   readonly jkt: string;
   private readonly clock: DemoClock;
 
-  private constructor(privateKey: KeyLike, publicJwk: JWK, jkt: string, clock: DemoClock) {
+  private constructor(privateKey: CryptoKey, publicJwk: JWK, jkt: string, clock: DemoClock) {
     this.privateKey = privateKey;
     this.publicJwk = publicJwk;
     this.jkt = jkt;
@@ -233,7 +244,7 @@ class DemoWas {
   readonly publicJwk: JWK;
   readonly jwks: { keys: JWK[] };
 
-  private readonly privateKey: KeyLike;
+  private readonly privateKey: CryptoKey;
   private readonly clock: DemoClock;
   private readonly approvedRequestIds = new Set<string>();
   private readonly resultByRequestId = new Map<string, WauthResultEnvelope>();
@@ -241,7 +252,7 @@ class DemoWas {
 
   constructor(options: {
     issuer: string;
-    privateKey: KeyLike;
+    privateKey: CryptoKey;
     publicJwk: JWK;
     clock: DemoClock;
   }) {
@@ -556,16 +567,16 @@ class DemoWalletMcp {
   async invoke(call: WauthToolCall): Promise<Record<string, JsonValue>> {
     if (call.name.endsWith(".request")) {
       const result = await this.was.request(call.arguments);
-      return { structuredContent: result };
+      return { structuredContent: result as unknown as JsonValue };
     }
 
     if (call.name.endsWith(".get")) {
       const ref = getRequiredString(call.arguments, "ref");
-      return { structuredContent: this.was.get(ref) };
+      return { structuredContent: this.was.get(ref) as unknown as JsonValue };
     }
 
     if (call.name.endsWith(".metadata")) {
-      return { structuredContent: this.was.metadata() };
+      return { structuredContent: this.was.metadata() as unknown as JsonValue };
     }
 
     throw new Error(`unsupported tool call: ${call.name}`);
@@ -629,8 +640,7 @@ export class WauthDemoEnvironment {
     const wallet = new DemoWalletMcp(was);
     const kcs = await DemoKcs.create(clock);
 
-    const repoRoot = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
-    const schemaRegistry = new WauthSchemaRegistry(resolve(repoRoot, "schemas"));
+    const schemaRegistry = new WauthSchemaRegistry(resolveSchemaDirectory());
 
     const bankRp = new DemoRelyingParty({
       name: "BankRP",

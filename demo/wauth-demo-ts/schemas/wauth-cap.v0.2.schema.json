@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/wauth-cap/v0.2",
+  "title": "WAUTH-CAP v0.2 (claims)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "iss",
+    "sub",
+    "aud",
+    "jti",
+    "iat",
+    "exp",
+    "mandate_jti",
+    "action_hash"
+  ],
+  "properties": {
+    "iss": {
+      "type": "string",
+      "format": "uri"
+    },
+    "sub": {
+      "type": "string",
+      "minLength": 1
+    },
+    "aud": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        }
+      ]
+    },
+    "jti": {
+      "type": "string",
+      "minLength": 1
+    },
+    "iat": {
+      "type": "integer"
+    },
+    "exp": {
+      "type": "integer"
+    },
+    "mandate_jti": {
+      "type": "string",
+      "minLength": 1
+    },
+    "action_hash": {
+      "type": "string",
+      "pattern": "^sha256:[A-Za-z0-9_-]{43}$"
+    },
+    "authorization_details": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "cnf": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/wauth-intent/v0.2",
+  "title": "WAUTH-INTENT v0.2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "profile",
+    "intentId",
+    "issuedAt",
+    "audience",
+    "agent",
+    "operation",
+    "constraints"
+  ],
+  "properties": {
+    "version": {
+      "const": "0.2"
+    },
+    "profile": {
+      "type": "string",
+      "minLength": 1
+    },
+    "intentId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "issuedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "audience": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "cnf": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "jkt": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parameters": {
+          "type": "object"
+        },
+        "upstream": {
+          "type": "object"
+        }
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "oneTime": {
+          "type": "boolean"
+        },
+        "envelope": {
+          "$ref": "wauth-envelope.v0.2.schema.json"
+        }
+      }
+    },
+    "display": {
+      "type": "object",
+      "description": "Human-readable fields for logging/UI. Not hashed unless specified by a profile.",
+      "additionalProperties": true
+    }
+  }
+}

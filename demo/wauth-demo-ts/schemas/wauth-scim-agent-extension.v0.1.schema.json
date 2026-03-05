@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/scim/wauth-scim-agent-extension/v0.1",
+  "title": "WAUTH SCIM Agent Extension",
+  "type": "object",
+  "required": [
+    "agentId",
+    "state"
+  ],
+  "properties": {
+    "agentId": {
+      "type": "string"
+    },
+    "instanceId": {
+      "type": "string"
+    },
+    "state": {
+      "enum": [
+        "registered",
+        "active",
+        "suspended",
+        "revoked",
+        "deleted"
+      ]
+    },
+    "ownerRef": {
+      "type": "string"
+    },
+    "workloadProfile": {
+      "type": "string"
+    },
+    "kcsProfile": {
+      "type": "string"
+    },
+    "activeJkts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

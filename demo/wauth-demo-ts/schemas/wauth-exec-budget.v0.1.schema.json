@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/wauth-exec-budget/v0.1",
+  "title": "WAUTH Execution Budget v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "budget_id"
+  ],
+  "properties": {
+    "budget_id": {
+      "type": "string"
+    },
+    "time_ms_max": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "token_max": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "turns_max": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "process_max": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "storage_bytes_max": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "network_requests_max": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "network_bytes_max": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "may_create_persistent_process": {
+      "type": "boolean"
+    },
+    "persistent_process_types": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "cron",
+          "daemon",
+          "monitor",
+          "scheduled_task",
+          "workflow",
+          "webhook_subscription",
+          "other"
+        ]
+      }
+    },
+    "termination_condition_required": {
+      "type": "boolean"
+    },
+    "ttl_seconds": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+}

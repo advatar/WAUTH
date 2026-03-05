@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/wauth-policy-context/v0.2",
+  "title": "WAUTH Policy Context v0.2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "resource",
+    "request"
+  ],
+  "properties": {
+    "version": {
+      "const": "0.2"
+    },
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "method": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      }
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "http": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "action_profile": {
+          "type": "string"
+        },
+        "action_instance": {
+          "type": "object"
+        },
+        "action_hash": {
+          "type": "string"
+        }
+      }
+    },
+    "caller": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "agent_id": {
+          "type": "string"
+        },
+        "client_id": {
+          "type": "string"
+        },
+        "presented_capability": {
+          "type": "object"
+        },
+        "presented_credentials": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "requester": {
+      "$ref": "https://schemas.aaif.io/wauth/wauth-requester-context/v0.1"
+    },
+    "instruction_sources": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.aaif.io/wauth/wauth-instruction-source/v0.1"
+      }
+    },
+    "execution_budget": {
+      "$ref": "https://schemas.aaif.io/wauth/wauth-exec-budget/v0.1"
+    },
+    "expected_postcondition": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "agent_links": {
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.aaif.io/wauth/wauth-agent-link/v0.1"
+      }
+    },
+    "signals": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "risk": {
+          "type": "string"
+        },
+        "device": {
+          "type": "object"
+        },
+        "geo": {
+          "type": "object"
+        }
+      }
+    },
+    "time": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "now": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

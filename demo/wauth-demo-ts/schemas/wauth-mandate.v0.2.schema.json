@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/wauth-mandate/v0.2",
+  "title": "WAUTH-MANDATE v0.2 (claims)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "iss",
+    "sub",
+    "aud",
+    "jti",
+    "iat",
+    "exp",
+    "scope",
+    "envelope"
+  ],
+  "properties": {
+    "iss": {
+      "type": "string",
+      "format": "uri"
+    },
+    "sub": {
+      "type": "string",
+      "minLength": 1
+    },
+    "aud": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        }
+      ]
+    },
+    "jti": {
+      "type": "string",
+      "minLength": 1
+    },
+    "iat": {
+      "type": "integer"
+    },
+    "exp": {
+      "type": "integer"
+    },
+    "scope": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "envelope": {
+      "$ref": "wauth-envelope.v0.2.schema.json"
+    },
+    "delegation": {
+      "type": "object"
+    },
+    "cnf": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "jkt": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

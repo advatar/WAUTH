@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/agent/wauth-agent-identity/v0.1",
+  "title": "WAUTH Agent Identity",
+  "type": "object",
+  "required": [
+    "version",
+    "agent_id",
+    "owner",
+    "org_boundary",
+    "workload_identity"
+  ],
+  "properties": {
+    "version": {
+      "const": "0.1"
+    },
+    "agent_id": {
+      "type": "string"
+    },
+    "instance_id": {
+      "type": "string"
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "owner": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "org_boundary": {
+      "type": "string"
+    },
+    "software_identity": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "image_digest": {
+          "type": "string"
+        },
+        "signer": {
+          "type": "string"
+        }
+      }
+    },
+    "workload_identity": {
+      "type": "object",
+      "required": [
+        "type",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "spiffe",
+            "did",
+            "oauth_client",
+            "x509",
+            "custom"
+          ]
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "active_jkt": {
+      "type": "string"
+    },
+    "labels": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "string",
+          "number",
+          "boolean"
+        ]
+      }
+    }
+  },
+  "additionalProperties": false
+}

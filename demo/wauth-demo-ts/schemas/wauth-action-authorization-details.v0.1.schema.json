@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/rar/wauth-action-authorization-details/v0.1",
+  "title": "WAUTH Authorization Details Type: Action Capability (Granted)",
+  "type": "object",
+  "required": [
+    "type",
+    "actions",
+    "locations",
+    "action_profile",
+    "hash_alg",
+    "action_hash"
+  ],
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "https://schemas.aaif.io/wauth/rar/wauth-action-authorization-details/v0.1",
+      "description": "RFC 9396 authorization_details type identifier."
+    },
+    "actions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      },
+      "description": "Intended action(s) covered by this capability."
+    },
+    "locations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "format": "uri"
+      },
+      "description": "Protected resource locations to which this capability applies (RFC 9396 common field)."
+    },
+    "action_profile": {
+      "type": "string",
+      "description": "Registry key for canonicalizing the action instance prior to hashing."
+    },
+    "hash_alg": {
+      "type": "string",
+      "enum": [
+        "S256"
+      ],
+      "description": "Hash algorithm for action_hash; S256 denotes SHA-256."
+    },
+    "action_hash": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{16,}$",
+      "description": "base64url-encoded hash of canonical action instance."
+    },
+    "envelope": {
+      "type": "object",
+      "description": "Optional envelope constraints (least privilege).",
+      "properties": {
+        "currency": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 3
+        },
+        "max_amount_minor": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_total_amount_minor": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "merchant_id": {
+          "type": "string"
+        },
+        "mcc": {
+          "type": "string"
+        },
+        "shipping_country": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 2
+        },
+        "max_uses": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": true
+    },
+    "assurance": {
+      "type": "object",
+      "description": "Optional assurance properties asserted by the issuer of the capability.",
+      "properties": {
+        "pohp": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "pp_profile": {
+          "type": "string"
+        },
+        "approved_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "binding": {
+      "type": "object",
+      "description": "Optional binding data echoed from the RP's challenge (if any).",
+      "properties": {
+        "challenge_id": {
+          "type": "string"
+        },
+        "nonce": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{8,}$"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": true
+}

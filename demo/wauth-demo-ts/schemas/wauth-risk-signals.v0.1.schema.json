@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/risk/wauth-risk-signals/v0.1",
+  "title": "WAUTH Risk Signals",
+  "type": "object",
+  "required": [
+    "version",
+    "signal_set_id",
+    "generated_at",
+    "recommended_action"
+  ],
+  "properties": {
+    "version": {
+      "const": "0.1"
+    },
+    "signal_set_id": {
+      "type": "string"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "prompt_origin_trust": {
+      "enum": [
+        "trusted",
+        "untrusted",
+        "mixed",
+        "unknown"
+      ]
+    },
+    "source_inventory": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "trust": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "tool_trust": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "prompt_injection_indicators": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "aggregated_sensitivity": {
+      "type": "object",
+      "properties": {
+        "highest": {
+          "type": "string"
+        },
+        "aggregate": {
+          "type": "string"
+        }
+      }
+    },
+    "recommended_action": {
+      "enum": [
+        "permit",
+        "step_up",
+        "deny"
+      ]
+    }
+  },
+  "additionalProperties": true
+}

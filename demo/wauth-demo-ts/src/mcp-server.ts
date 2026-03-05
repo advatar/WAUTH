@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import * as z from "zod/v4";
+import type { Request, Response } from "express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
@@ -44,6 +45,10 @@ function toRecord(value: unknown): Record<string, JsonValue> | undefined {
 
 function queryString(value: unknown): string | undefined {
   return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function asStructuredContent(value: unknown): Record<string, unknown> {
+  return value as Record<string, unknown>;
 }
 
 function approvalPage(options: {
@@ -177,7 +182,7 @@ function createServer(): McpServer {
             text: toolText(status)
           }
         ],
-        structuredContent: status
+        structuredContent: asStructuredContent(status)
       };
     }
   );
@@ -196,7 +201,7 @@ function createServer(): McpServer {
       const payload = state ?? { status: "not_found" };
       return {
         content: [{ type: "text", text: toolText(payload) }],
-        structuredContent: payload
+        structuredContent: asStructuredContent(payload)
       };
     }
   );
@@ -223,7 +228,7 @@ function createServer(): McpServer {
 
       return {
         content: [{ type: "text", text: toolText(payload) }],
-        structuredContent: payload
+        structuredContent: asStructuredContent(payload)
       };
     }
   );
@@ -249,7 +254,7 @@ function createServer(): McpServer {
       };
       return {
         content: [{ type: "text", text: toolText(payload) }],
-        structuredContent: payload
+        structuredContent: asStructuredContent(payload)
       };
     }
   );
@@ -274,7 +279,7 @@ function createServer(): McpServer {
       };
       return {
         content: [{ type: "text", text: toolText(payload) }],
-        structuredContent: payload
+        structuredContent: asStructuredContent(payload)
       };
     }
   );
@@ -314,7 +319,7 @@ function createServer(): McpServer {
 
       return {
         content: [{ type: "text", text: toolText(payload) }],
-        structuredContent: payload
+        structuredContent: asStructuredContent(payload)
       };
     }
   );
@@ -359,7 +364,7 @@ function createServer(): McpServer {
 
       return {
         content: [{ type: "text", text: toolText(request.envelope) }],
-        structuredContent: request.envelope
+        structuredContent: asStructuredContent(request.envelope)
       };
     }
   );
@@ -377,7 +382,7 @@ function createServer(): McpServer {
       const artifact = await wauthService.getArtifact(ref);
       return {
         content: [{ type: "text", text: toolText(artifact) }],
-        structuredContent: artifact
+        structuredContent: asStructuredContent(artifact)
       };
     }
   );
@@ -393,7 +398,7 @@ function createServer(): McpServer {
       const metadata = await wauthService.metadata();
       return {
         content: [{ type: "text", text: toolText(metadata) }],
-        structuredContent: metadata
+        structuredContent: asStructuredContent(metadata)
       };
     }
   );
@@ -402,93 +407,126 @@ function createServer(): McpServer {
 }
 
 export async function startMcpHttpServer(port = DEFAULT_PORT): Promise<void> {
+  const app = buildMcpExpressApp();
+  app.listen(port, () => {
+    // eslint-disable-next-line no-console
+    console.log(`WAUTH demo MCP server listening on port ${port}`);
+  });
+}
+
+export function buildMcpExpressApp() {
   const app = createMcpExpressApp({ host: "0.0.0.0" });
   const transports: Record<string, StreamableHTTPServerTransport> = {};
+  const mcpPaths = ["/mcp", "/api/mcp"] as const;
+  const configPaths = [
+    "/.well-known/aaif-wauth-configuration",
+    "/api/.well-known/aaif-wauth-configuration"
+  ] as const;
+  const jwksPaths = ["/jwks", "/api/jwks"] as const;
+  const approvalPaths = ["/iproov/approve", "/api/iproov/approve"] as const;
+  const approvalCompletePaths = [
+    "/iproov/approve/complete",
+    "/api/iproov/approve/complete"
+  ] as const;
+  const healthPaths = ["/healthz", "/api/healthz"] as const;
 
-  app.post("/mcp", async (req, res) => {
-    try {
-      const sessionId = req.headers["mcp-session-id"] as string | undefined;
-      let transport: StreamableHTTPServerTransport | undefined = sessionId
-        ? transports[sessionId]
-        : undefined;
+  for (const routePath of mcpPaths) {
+    app.post(routePath, async (req: Request, res: Response) => {
+      try {
+        const sessionId = req.headers["mcp-session-id"] as string | undefined;
+        let transport: StreamableHTTPServerTransport | undefined = sessionId
+          ? transports[sessionId]
+          : undefined;
 
-      if (!transport && !sessionId && isInitializeRequest(req.body)) {
-        transport = new StreamableHTTPServerTransport({
-          sessionIdGenerator: () => randomUUID(),
-          enableJsonResponse: true,
-          onsessioninitialized: (generatedSessionId) => {
-            transports[generatedSessionId] = transport!;
-          }
-        });
+        if (!transport && !sessionId && isInitializeRequest(req.body)) {
+          transport = new StreamableHTTPServerTransport({
+            sessionIdGenerator: () => randomUUID(),
+            enableJsonResponse: true,
+            onsessioninitialized: (generatedSessionId) => {
+              transports[generatedSessionId] = transport!;
+            }
+          });
 
-        const server = createServer();
-        await server.connect(transport);
+          const server = createServer();
+          await server.connect(transport);
+          await transport.handleRequest(req, res, req.body);
+          return;
+        }
+
+        if (!transport) {
+          res.status(400).json({
+            jsonrpc: "2.0",
+            error: {
+              code: -32000,
+              message: "Bad Request: No valid session ID provided"
+            },
+            id: null
+          });
+          return;
+        }
+
         await transport.handleRequest(req, res, req.body);
-        return;
+      } catch (error) {
+        if (!res.headersSent) {
+          res.status(500).json({
+            jsonrpc: "2.0",
+            error: {
+              code: -32603,
+              message: error instanceof Error ? error.message : "Internal server error"
+            },
+            id: null
+          });
+        }
       }
+    });
+  }
+
+  for (const routePath of mcpPaths) {
+    app.get(routePath, async (req: Request, res: Response) => {
+      const sessionId = req.headers["mcp-session-id"] as string | undefined;
+      const transport = sessionId ? transports[sessionId] : undefined;
 
       if (!transport) {
-        res.status(400).json({
-          jsonrpc: "2.0",
-          error: {
-            code: -32000,
-            message: "Bad Request: No valid session ID provided"
-          },
-          id: null
-        });
+        res.status(400).send("Invalid or missing session ID");
         return;
       }
 
-      await transport.handleRequest(req, res, req.body);
-    } catch (error) {
-      if (!res.headersSent) {
-        res.status(500).json({
-          jsonrpc: "2.0",
-          error: {
-            code: -32603,
-            message: error instanceof Error ? error.message : "Internal server error"
-          },
-          id: null
-        });
+      await transport.handleRequest(req, res);
+    });
+  }
+
+  for (const routePath of mcpPaths) {
+    app.delete(routePath, async (req: Request, res: Response) => {
+      const sessionId = req.headers["mcp-session-id"] as string | undefined;
+      const transport = sessionId ? transports[sessionId] : undefined;
+      if (!transport) {
+        res.status(400).send("Invalid or missing session ID");
+        return;
       }
-    }
-  });
 
-  app.get("/mcp", async (req, res) => {
-    const sessionId = req.headers["mcp-session-id"] as string | undefined;
-    const transport = sessionId ? transports[sessionId] : undefined;
+      await transport.handleRequest(req, res);
+      if (sessionId) {
+        delete transports[sessionId];
+      }
+    });
+  }
 
-    if (!transport) {
-      res.status(400).send("Invalid or missing session ID");
-      return;
-    }
+  for (const routePath of configPaths) {
+    app.get(routePath, async (_req: Request, res: Response) => {
+      const metadata = await wauthService.metadata();
+      res.json(metadata);
+    });
+  }
 
-    await transport.handleRequest(req, res);
-  });
+  for (const routePath of jwksPaths) {
+    app.get(routePath, async (_req: Request, res: Response) => {
+      const jwks = await wauthService.jwks();
+      res.json(jwks);
+    });
+  }
 
-  app.delete("/mcp", async (req, res) => {
-    const sessionId = req.headers["mcp-session-id"] as string | undefined;
-    const transport = sessionId ? transports[sessionId] : undefined;
-    if (!transport) {
-      res.status(400).send("Invalid or missing session ID");
-      return;
-    }
-
-    await transport.handleRequest(req, res);
-    delete transports[sessionId];
-  });
-
-  app.get("/.well-known/aaif-wauth-configuration", async (_req, res) => {
-    const metadata = await wauthService.metadata();
-    res.json(metadata);
-  });
-
-  app.get("/jwks", async (_req, res) => {
-    const jwks = await wauthService.jwks();
-    res.json(jwks);
-  });
-
-  app.get("/iproov/approve", async (req, res) => {
+  for (const routePath of approvalPaths) {
+    app.get(routePath, async (req: Request, res: Response) => {
     const approvalId = queryString(req.query.approval_id);
     if (!approvalId) {
       res.status(400).send(approvalPage({
@@ -513,15 +551,21 @@ export async function startMcpHttpServer(port = DEFAULT_PORT): Promise<void> {
       ? `${workflowPending.approval.message}\n\nWorkflow: ${workflowPending.workflowId}`
       : `${wauthPending!.message}\n\nRequest: ${wauthPending!.requestId}`;
 
+    const actionBasePath = req.path.startsWith("/api/")
+      ? "/api/iproov/approve/complete"
+      : "/iproov/approve/complete";
+
     res.send(approvalPage({
       title: "iProov Approval Required",
       body,
-      actionUrl: `/iproov/approve/complete?approval_id=${encodeURIComponent(approvalId)}`,
+      actionUrl: `${actionBasePath}?approval_id=${encodeURIComponent(approvalId)}`,
       actionLabel: "Approve With iProov"
     }));
-  });
+    });
+  }
 
-  app.get("/iproov/approve/complete", async (req, res) => {
+  for (const routePath of approvalCompletePaths) {
+    app.get(routePath, async (req: Request, res: Response) => {
     const approvalId = queryString(req.query.approval_id);
     if (!approvalId) {
       res.status(400).send(approvalPage({
@@ -559,16 +603,16 @@ export async function startMcpHttpServer(port = DEFAULT_PORT): Promise<void> {
       title: "Approval not found",
       body: "This approval is no longer pending or has already been used."
     }));
-  });
+    });
+  }
 
-  app.get("/healthz", (_req, res) => {
-    res.json({ ok: true, service: "wauth-demo-mcp" });
-  });
+  for (const routePath of healthPaths) {
+    app.get(routePath, (_req: Request, res: Response) => {
+      res.json({ ok: true, service: "wauth-demo-mcp" });
+    });
+  }
 
-  app.listen(port, () => {
-    // eslint-disable-next-line no-console
-    console.log(`WAUTH demo MCP server listening on port ${port}`);
-  });
+  return app;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

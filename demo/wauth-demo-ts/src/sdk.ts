@@ -26,4 +26,4 @@ export {
   type WauthMetadataEnvelope,
   type WauthResultEnvelope,
   type WauthToolCall
-} from "../../../sdk/wauth-ts/src/index.js";
+} from "../vendor/wauth-ts/src/index.js";

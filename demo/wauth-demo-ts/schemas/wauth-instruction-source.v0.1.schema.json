@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aaif.io/wauth/wauth-instruction-source/v0.1",
+  "title": "WAUTH Instruction Source v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_id",
+    "source_type",
+    "authority_class",
+    "mutability",
+    "loaded_as"
+  ],
+  "properties": {
+    "source_id": {
+      "type": "string"
+    },
+    "uri": {
+      "type": "string",
+      "format": "uri"
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "memory_file",
+        "gist",
+        "wiki",
+        "repo_file",
+        "policy_bundle",
+        "tool_output",
+        "chat_message",
+        "system_prompt",
+        "document",
+        "other"
+      ]
+    },
+    "authority_class": {
+      "type": "string",
+      "enum": [
+        "authoritative",
+        "reference",
+        "data",
+        "untrusted"
+      ]
+    },
+    "mutability": {
+      "type": "string",
+      "enum": [
+        "immutable",
+        "versioned",
+        "append_only",
+        "mutable",
+        "externally_editable"
+      ]
+    },
+    "loaded_as": {
+      "type": "string",
+      "enum": [
+        "instruction",
+        "policy",
+        "memory",
+        "reference",
+        "data"
+      ]
+    },
+    "signed": {
+      "type": "boolean"
+    },
+    "digest": {
+      "type": "string"
+    },
+    "review_state": {
+      "type": "string",
+      "enum": [
+        "approved",
+        "pending",
+        "unreviewed",
+        "rejected"
+      ]
+    },
+    "issuer": {
+      "type": "string"
+    },
+    "provenance_ref": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  }
+}

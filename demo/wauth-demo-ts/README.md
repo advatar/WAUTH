@@ -55,6 +55,22 @@ Server endpoints:
 - `GET /.well-known/aaif-wauth-configuration`
 - `GET /jwks`
 - `GET /iproov/approve` (approval UI shown by URL elicitation)
+- Vercel serverless endpoints (catch-all): `/api/mcp`, `/api/healthz`, `/api/jwks`, `/api/iproov/approve`
+
+### Deploy to Vercel
+
+```sh
+cd demo/wauth-demo-ts
+npx vercel --prod
+```
+
+Set environment variable in Vercel project:
+- `WAUTH_DEMO_ISSUER=https://wauth-demo.showntell.dev/api`
+- `WAUTH_DEMO_STATE_FILE=/tmp/wauth-demo/workflow-state.json`
+- `WAUTH_DEMO_WAUTH_STATE_FILE=/tmp/wauth-demo/wauth-state.json`
+
+Use MCP endpoint in ChatGPT:
+- `https://wauth-demo.showntell.dev/api/mcp`
 
 ### ChatGPT tool flow
 
