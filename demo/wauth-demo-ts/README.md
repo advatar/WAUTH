@@ -45,6 +45,7 @@ npm run demo
 ```sh
 cd demo/wauth-demo-ts
 npm install
+WAUTH_DEMO_ISSUER=http://127.0.0.1:3000 \
 npm run serve:mcp
 ```
 
