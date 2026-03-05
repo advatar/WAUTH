@@ -31,3 +31,15 @@ cd demo/wauth-demo-ts
 npm install
 npm run demo
 ```
+
+## Build static demo page
+
+```sh
+cd demo/wauth-demo-ts
+npm install
+npm run build:static
+```
+
+The static output is written to `dist/`:
+- `dist/index.html`
+- `dist/result.json`

@@ -6,7 +6,8 @@
   "description": "WAUTH demo implementation in TypeScript",
   "scripts": {
     "test": "vitest run",
-    "demo": "tsx src/cli.ts"
+    "demo": "tsx src/cli.ts",
+    "build:static": "tsx src/build-static.ts"
   },
   "dependencies": {
     "jose": "^6.1.0"
