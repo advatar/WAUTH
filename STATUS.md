@@ -1,9 +1,10 @@
 # Status
 
-## Current Task: Demo checklist and TypeScript SDK coverage for demo build
+## Current Task: Build runnable TypeScript demo implementation
 
-- [x] Map `demo/wauth-demo-engineering-backlog-v0.1.md` requirements to current TypeScript SDK API
-- [x] Add missing TypeScript SDK helper coverage required for demo build (DPoP proof create/verify + token binding and replay utilities)
-- [x] Add/extend TypeScript unit tests for new demo-critical helpers
-- [x] Add a detailed SDK-mapped implementation checklist to the demo backlog document
-- [x] Run full SDK conformance test suite
+- [x] Create `demo/wauth-demo-ts` TypeScript demo package scaffold with scripts/docs
+- [x] Implement in-memory WAS + MCP wallet app (`aaif.wauth.request/get/metadata`) using SDK helpers
+- [x] Implement mock Bank/Employer/IRS RPs with WAUTH lock behavior (`wauth_required` -> capability+DPoP retry)
+- [x] Implement end-to-end tax demo scenario runner and timeline/receipt outputs
+- [x] Add automated tests for the scenario and key acceptance criteria
+- [x] Run demo package tests + full SDK conformance suite
