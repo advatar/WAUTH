@@ -1,10 +1,9 @@
 # Status
 
-## Current Task: Improve approval UX in ChatGPT tool responses
+## Current Task: Replace mock HAPP handoff with a real HAPP-backed demo flow
 
-- [x] Use shorter approval URLs in MCP elicitation payloads (avoid long encoded HAPP query strings in chat)
-- [x] Make approval-required message text simpler and more user-facing
-- [x] Add/adjust tests for approval URL/message behavior
-- [x] Validate with local tests and static build
-- [x] Deploy updated WAUTH app to `wauth-demo.showntell.dev`
-- [x] Validate live MCP approval elicitation output
+- [x] Wire `demo/wauth-demo-ts` approvals through the local `../AAIF/HAPP` reference implementation instead of synthetic HAPP URLs
+- [x] Persist HAPP session and consent-credential state in the tax and WAUTH approval flows
+- [x] Update the approval landing/completion UX so completion is driven by HAPP session state, not by a bare callback URL
+- [x] Adjust tests and docs for the HAPP-backed browser flow
+- [x] Verify the updated local demo build/tests and commit only the touched files

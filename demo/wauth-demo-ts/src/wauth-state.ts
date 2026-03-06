@@ -4,6 +4,7 @@ import { dirname, resolve } from "node:path";
 
 import { SignJWT, type JWTPayload } from "jose";
 
+import type { HappConsentCredentialEnvelope, HappPendingSession } from "./happ-local-ref.js";
 import { computeActionHash, type JsonValue, type WauthArtifact, type WauthResultEnvelope } from "./sdk.js";
 
 const DEFAULT_DATA_FILE = resolve(process.cwd(), ".wauth-demo", "wauth-state.json");
@@ -125,6 +126,7 @@ export interface WauthPendingApproval {
   message: string;
   approvalUrl: string;
   createdAt: string;
+  happ?: HappPendingSession;
 }
 
 export interface WauthRequestState {
@@ -136,6 +138,7 @@ export interface WauthRequestState {
   actionInstance?: JsonValue;
   agentIdentity?: Record<string, JsonValue>;
   pendingApproval?: WauthPendingApproval;
+  happCredential?: HappConsentCredentialEnvelope;
   artifactRef: string;
   envelope?: WauthResultEnvelope;
   artifact?: WauthArtifact;
@@ -238,6 +241,15 @@ export class WauthRequestService {
   private approvalUrl(requestId: string, approvalId: string): string {
     const baseUrl = trimTrailingSlash(this.approvalBaseUrl);
     return `${baseUrl}?request_id=${encodeURIComponent(requestId)}&approval_id=${encodeURIComponent(approvalId)}`;
+  }
+
+  private findRequestStateByApprovalId(approvalId: string): WauthRequestState {
+    for (const state of this.requests.values()) {
+      if (state.pendingApproval?.approvalId === approvalId) {
+        return state;
+      }
+    }
+    throw new Error(`approval ${approvalId} is not pending`);
   }
 
   private async issueCapability(state: WauthRequestState): Promise<void> {
@@ -359,22 +371,17 @@ export class WauthRequestService {
 
   async approveByApprovalId(approvalId: string): Promise<WauthRequestResult> {
     await this.ready();
-    for (const state of this.requests.values()) {
-      if (state.pendingApproval?.approvalId === approvalId) {
-        await this.issueCapability(state);
-        state.pendingApproval = undefined;
-        state.status = "issued";
-        state.updatedAt = nowIso();
-        await this.persist();
-        return {
-          requestId: state.requestId,
-          state: cloneValue(state),
-          envelope: cloneValue(state.envelope)
-        };
-      }
-    }
-
-    throw new Error(`approval ${approvalId} is not pending`);
+    const state = this.findRequestStateByApprovalId(approvalId);
+    await this.issueCapability(state);
+    state.pendingApproval = undefined;
+    state.status = "issued";
+    state.updatedAt = nowIso();
+    await this.persist();
+    return {
+      requestId: state.requestId,
+      state: cloneValue(state),
+      envelope: cloneValue(state.envelope)
+    };
   }
 
   async findPendingApprovalById(approvalId: string): Promise<WauthPendingApproval | undefined> {
@@ -385,6 +392,47 @@ export class WauthRequestService {
       }
     }
     return undefined;
+  }
+
+  async attachHappSession(approvalId: string, happ: HappPendingSession): Promise<WauthPendingApproval> {
+    await this.ready();
+    const state = this.findRequestStateByApprovalId(approvalId);
+    if (!state.pendingApproval) {
+      throw new Error(`approval ${approvalId} is no longer pending`);
+    }
+
+    state.pendingApproval.happ = cloneValue(happ);
+    state.updatedAt = nowIso();
+    await this.persist();
+    return cloneValue(state.pendingApproval);
+  }
+
+  async recordHappCredential(
+    approvalId: string,
+    credential: HappConsentCredentialEnvelope
+  ): Promise<WauthPendingApproval> {
+    await this.ready();
+    const state = this.findRequestStateByApprovalId(approvalId);
+    if (!state.pendingApproval?.happ) {
+      throw new Error(`approval ${approvalId} has no HAPP session`);
+    }
+
+    state.pendingApproval.happ = {
+      ...state.pendingApproval.happ,
+      status: "approved",
+      credential: cloneValue(credential),
+      updatedAt: nowIso()
+    };
+    state.happCredential = cloneValue(credential);
+    state.updatedAt = nowIso();
+    await this.persist();
+    return cloneValue(state.pendingApproval);
+  }
+
+  async getRequestState(requestId: string): Promise<WauthRequestState | undefined> {
+    await this.ready();
+    const state = this.requests.get(requestId);
+    return state ? cloneValue(state) : undefined;
   }
 
   async getArtifact(ref: string): Promise<WauthArtifact> {

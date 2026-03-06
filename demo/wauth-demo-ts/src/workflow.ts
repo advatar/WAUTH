@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 
+import type { HappConsentCredentialEnvelope, HappPendingSession } from "./happ-local-ref.js";
 import { runTaxDemoScenario, type DemoTimelineEvent, type TaxDemoRunResult } from "./engine.js";
 import type { JsonValue } from "./sdk.js";
 
@@ -13,6 +14,7 @@ export interface PendingApproval {
   message: string;
   approvalUrl: string;
   createdAt: string;
+  happ?: HappPendingSession;
 }
 
 export interface TaxWorkflowState {
@@ -195,6 +197,15 @@ export class TaxWorkflowService {
     return pending;
   }
 
+  private findPendingWorkflowState(approvalId: string): TaxWorkflowState {
+    for (const state of this.workflows.values()) {
+      if (state.pendingApproval?.approvalId === approvalId) {
+        return state;
+      }
+    }
+    throw new Error(`approval ${approvalId} is not pending`);
+  }
+
   async runTaxFiling(sessionId: string | undefined, requestedWorkflowId?: string): Promise<RunWorkflowResult> {
     await this.ready();
 
@@ -323,12 +334,8 @@ export class TaxWorkflowService {
 
   async approveByApprovalId(approvalId: string): Promise<TaxWorkflowState> {
     await this.ready();
-    for (const [workflowId, state] of this.workflows.entries()) {
-      if (state.pendingApproval?.approvalId === approvalId) {
-        return this.approve(workflowId, approvalId);
-      }
-    }
-    throw new Error(`approval ${approvalId} is not pending`);
+    const state = this.findPendingWorkflowState(approvalId);
+    return this.approve(state.workflowId, approvalId);
   }
 
   async approveAndAdvanceBySession(
@@ -375,6 +382,71 @@ export class TaxWorkflowService {
       }
     }
     return undefined;
+  }
+
+  async attachHappSession(approvalId: string, happ: HappPendingSession): Promise<PendingApproval> {
+    await this.ready();
+    const state = this.findPendingWorkflowState(approvalId);
+    if (!state.pendingApproval) {
+      throw new Error(`approval ${approvalId} is no longer pending`);
+    }
+
+    state.pendingApproval.happ = JSON.parse(JSON.stringify(happ)) as HappPendingSession;
+    state.updatedAt = nowIso();
+    state.events.push({
+      at: nowIso(),
+      type: "approval.happ.session_created",
+      detail: {
+        workflow_id: state.workflowId,
+        approval_id: approvalId,
+        happ_request_id: happ.requestId,
+        happ_session_id: happ.sessionId
+      } as Record<string, JsonValue>
+    });
+    await this.persist();
+    return cloneState(state).pendingApproval!;
+  }
+
+  async recordHappCredential(
+    approvalId: string,
+    credential: HappConsentCredentialEnvelope
+  ): Promise<PendingApproval> {
+    await this.ready();
+    const state = this.findPendingWorkflowState(approvalId);
+    if (!state.pendingApproval) {
+      throw new Error(`approval ${approvalId} is no longer pending`);
+    }
+    if (!state.pendingApproval.happ) {
+      throw new Error(`approval ${approvalId} has no HAPP session`);
+    }
+
+    state.pendingApproval.happ = {
+      ...state.pendingApproval.happ,
+      status: "approved",
+      credential: JSON.parse(JSON.stringify(credential)) as HappConsentCredentialEnvelope,
+      updatedAt: nowIso()
+    };
+    state.updatedAt = nowIso();
+    state.events.push({
+      at: nowIso(),
+      type: "approval.happ.verified",
+      detail: {
+        workflow_id: state.workflowId,
+        approval_id: approvalId,
+        happ_session_id: state.pendingApproval.happ.sessionId,
+        format: credential.format,
+        issuer: typeof credential.claims.issuer === "string" ? credential.claims.issuer : undefined,
+        audience: typeof credential.claims.aud === "string" ? credential.claims.aud : undefined,
+        assurance_level: typeof (credential.claims.assurance as Record<string, JsonValue> | undefined)?.level === "string"
+          ? (credential.claims.assurance as Record<string, JsonValue>).level
+          : undefined,
+        verified_at: typeof (credential.claims.assurance as Record<string, JsonValue> | undefined)?.verifiedAt === "string"
+          ? (credential.claims.assurance as Record<string, JsonValue>).verifiedAt
+          : undefined
+      } as Record<string, JsonValue>
+    });
+    await this.persist();
+    return cloneState(state).pendingApproval!;
   }
 
   async timeline(workflowId: string): Promise<DemoTimelineEvent[]> {

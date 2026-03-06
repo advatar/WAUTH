@@ -98,6 +98,22 @@ describe("WauthRequestService", () => {
         ]
       }
     });
+    await service1.attachHappSession(run.pendingApproval!.approvalId, {
+      mode: "local-ref",
+      requestId: "happ-req-2",
+      sessionId: "sess-2",
+      sessionUrl: "http://127.0.0.1:8787/session/sess-2",
+      sessionApiUrl: "http://127.0.0.1:8787/api/session/sess-2",
+      actionIntent: {
+        audience: { id: "https://wauth-demo.showntell.dev" }
+      },
+      requirements: {
+        pohp: { minLevel: "AAIF-PoHP-2" }
+      },
+      status: "pending",
+      createdAt: "2026-03-06T12:00:00.000Z",
+      updatedAt: "2026-03-06T12:00:00.000Z"
+    });
 
     const service2 = new WauthRequestService({
       issuer: "https://wauth-demo.showntell.dev",
@@ -107,5 +123,6 @@ describe("WauthRequestService", () => {
 
     const pending = await service2.findPendingApprovalById(run.pendingApproval!.approvalId);
     expect(pending?.requestId).toBe("req-employer-1");
+    expect(pending?.happ?.sessionId).toBe("sess-2");
   });
 });

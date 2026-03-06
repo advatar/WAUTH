@@ -38,6 +38,22 @@ describe("TaxWorkflowService", () => {
 
     const service1 = new TaxWorkflowService(dataFile);
     const run = await service1.runTaxFiling("session-2");
+    await service1.attachHappSession(run.pendingApproval!.approvalId, {
+      mode: "local-ref",
+      requestId: "happ-req-1",
+      sessionId: "sess-1",
+      sessionUrl: "http://127.0.0.1:8787/session/sess-1",
+      sessionApiUrl: "http://127.0.0.1:8787/api/session/sess-1",
+      actionIntent: {
+        audience: { id: "https://wauth-demo.showntell.dev" }
+      },
+      requirements: {
+        pohp: { minLevel: "AAIF-PoHP-2" }
+      },
+      status: "pending",
+      createdAt: "2026-03-06T12:00:00.000Z",
+      updatedAt: "2026-03-06T12:00:00.000Z"
+    });
     const workflowId = run.workflowId;
 
     const service2 = new TaxWorkflowService(dataFile);
@@ -45,5 +61,6 @@ describe("TaxWorkflowService", () => {
 
     expect(restored?.workflowId).toBe(workflowId);
     expect(restored?.pendingApproval?.stage).toBe("read_evidence");
+    expect(restored?.pendingApproval?.happ?.sessionId).toBe("sess-1");
   });
 });

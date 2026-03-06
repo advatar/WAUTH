@@ -49,6 +49,25 @@ WAUTH_DEMO_ISSUER=http://127.0.0.1:3000 \
 npm run serve:mcp
 ```
 
+### Local HAPP mode
+
+If the sibling repo `../AAIF/HAPP` is present, the demo server now defaults to `WAUTH_DEMO_HAPP_MODE=local-ref` and will spawn the local Rust `happd` reference provider on demand for browser approvals.
+
+Recommended verification steps:
+
+```sh
+cd ../AAIF/HAPP/implementations/rust
+cargo build -p happd
+```
+
+The approval landing page opens the provider-owned HAPP UI in a separate tab and polls until the local HAPP session is approved.
+
+To force the legacy redirect-only handoff instead of the local sidecar, set:
+
+```sh
+WAUTH_DEMO_HAPP_MODE=handoff
+```
+
 Server endpoints:
 - `POST /mcp` (MCP Streamable HTTP)
 - `GET /healthz`
@@ -80,7 +99,7 @@ Register the MCP endpoint in your ChatGPT app, then in chat use:
 
 The model should call `aaif.demo.tax.file` and run automatically until approval is required.
 When iProov approval is needed, the tool raises MCP URL elicitation (`-32042`) with an approval URL.
-Open that URL, complete verification in HAPP, and return via callback. The server auto-advances to the next gate or completion.
+Open that URL, launch the HAPP approval tab, complete the provider-side approval flow, and leave the original tab open. The landing page polls the HAPP session and auto-advances to the next gate or completion when approval is detected.
 If your client does not auto-resume tool execution, call `aaif.demo.tax.file` again.
 
 Useful tools:
