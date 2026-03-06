@@ -24,4 +24,19 @@ describe("buildHappApprovalHandoffUrl", () => {
       "https://wauth-demo.showntell.dev/api/iproov/approve/complete?approval_id=approve_123"
     );
   });
+
+  it("does not duplicate /api when issuer already includes /api", () => {
+    const url = buildHappApprovalHandoffUrl({
+      happBaseUrl: "https://happ.showntell.dev",
+      issuerBaseUrl: "https://wauth-demo.showntell.dev/api",
+      approvalId: "approve_456",
+      requestPath: "/api/mcp"
+    });
+
+    const parsed = new URL(url);
+    const callback = new URL(parsed.searchParams.get("return_url")!);
+    expect(callback.toString()).toBe(
+      "https://wauth-demo.showntell.dev/api/iproov/approve/complete?approval_id=approve_456"
+    );
+  });
 });

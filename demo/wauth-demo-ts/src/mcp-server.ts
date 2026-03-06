@@ -69,7 +69,7 @@ function buildApprovalCompletionUrl(
   approvalId: string,
   requestPath: string
 ): string {
-  const callbackUrl = new URL(`${issuer}${completionPathForRequestPath(requestPath)}`);
+  const callbackUrl = new URL(completionPathForRequestPath(requestPath), issuer.trim());
   callbackUrl.searchParams.set("approval_id", approvalId);
   return callbackUrl.toString();
 }
