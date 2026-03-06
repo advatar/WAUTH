@@ -1,10 +1,10 @@
 # Status
 
-## Current Task: Wire WAUTH demo approvals to deployed HAPP service
+## Current Task: Improve approval UX in ChatGPT tool responses
 
-- [ ] Route WAUTH approval elicitations to `https://happ.showntell.dev` with callback back to WAUTH completion endpoint
-- [ ] Add WAUTH server env/config for HAPP base URL and document it
-- [ ] Update HAPP demo UI to support approval callback handoff (return to WAUTH after successful verify)
-- [ ] Deploy updated HAPP app to `happ.showntell.dev`
-- [ ] Deploy updated WAUTH app to `wauth-demo.showntell.dev`
-- [ ] Validate live end-to-end ChatGPT/MCP flow with HAPP handoff URLs
+- [x] Use shorter approval URLs in MCP elicitation payloads (avoid long encoded HAPP query strings in chat)
+- [x] Make approval-required message text simpler and more user-facing
+- [x] Add/adjust tests for approval URL/message behavior
+- [x] Validate with local tests and static build
+- [x] Deploy updated WAUTH app to `wauth-demo.showntell.dev`
+- [x] Validate live MCP approval elicitation output

@@ -59,9 +59,9 @@ function cloneState(state: TaxWorkflowState): TaxWorkflowState {
 
 function approvalMessage(stage: ApprovalStage): string {
   if (stage === "read_evidence") {
-    return "iProov approval required for read-only evidence gathering (Bank + Employer).";
+    return "Approval needed to continue. Please verify your identity for read-only evidence collection (bank and employer).";
   }
-  return "iProov approval required for final IRS submission.";
+  return "Final approval needed. Please verify your identity to submit your tax return.";
 }
 
 function trimTrailingSlash(value: string): string {

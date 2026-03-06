@@ -342,7 +342,7 @@ export class WauthRequestService {
       pendingApproval: {
         approvalId,
         requestId,
-        message: "iProov approval required for WAUTH capability issuance.",
+        message: "Approval needed to continue. Please verify your identity to issue your WAUTH capability.",
         approvalUrl: this.approvalUrl(requestId, approvalId),
         createdAt: nowIso()
       }

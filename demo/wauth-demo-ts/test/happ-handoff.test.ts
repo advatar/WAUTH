@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildHappApprovalHandoffUrl } from "../src/mcp-server.js";
+import { buildApprovalLandingUrl, buildHappApprovalHandoffUrl } from "../src/mcp-server.js";
 
 describe("buildHappApprovalHandoffUrl", () => {
   it("builds HAPP handoff URL with callback and approval context", () => {
@@ -38,5 +38,27 @@ describe("buildHappApprovalHandoffUrl", () => {
     expect(callback.toString()).toBe(
       "https://wauth-demo.showntell.dev/api/iproov/approve/complete?approval_id=approve_456"
     );
+  });
+});
+
+describe("buildApprovalLandingUrl", () => {
+  it("builds a short first-party approval URL for elicitation", () => {
+    const url = buildApprovalLandingUrl({
+      issuerBaseUrl: "https://wauth-demo.showntell.dev",
+      approvalId: "approve_789",
+      requestPath: "/api/mcp"
+    });
+
+    expect(url).toBe("https://wauth-demo.showntell.dev/api/iproov/approve?approval_id=approve_789");
+  });
+
+  it("keeps path stable when issuer already includes /api", () => {
+    const url = buildApprovalLandingUrl({
+      issuerBaseUrl: "https://wauth-demo.showntell.dev/api",
+      approvalId: "approve_999",
+      requestPath: "/api/mcp"
+    });
+
+    expect(url).toBe("https://wauth-demo.showntell.dev/api/iproov/approve?approval_id=approve_999");
   });
 });

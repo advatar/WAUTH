@@ -64,6 +64,12 @@ function completionPathForRequestPath(pathname: string): string {
     : "/iproov/approve/complete";
 }
 
+function approvalPathForRequestPath(pathname: string): string {
+  return isApiPath(pathname)
+    ? "/api/iproov/approve"
+    : "/iproov/approve";
+}
+
 function buildApprovalCompletionUrl(
   issuer: string,
   approvalId: string,
@@ -72,6 +78,16 @@ function buildApprovalCompletionUrl(
   const callbackUrl = new URL(completionPathForRequestPath(requestPath), issuer.trim());
   callbackUrl.searchParams.set("approval_id", approvalId);
   return callbackUrl.toString();
+}
+
+export function buildApprovalLandingUrl(options: {
+  issuerBaseUrl: string;
+  approvalId: string;
+  requestPath: string;
+}): string {
+  const approvalUrl = new URL(approvalPathForRequestPath(options.requestPath), options.issuerBaseUrl.trim());
+  approvalUrl.searchParams.set("approval_id", options.approvalId);
+  return approvalUrl.toString();
 }
 
 export function buildHappApprovalHandoffUrl(options: {
@@ -215,9 +231,9 @@ function createServer(): McpServer {
       const result = await workflowService.runTaxFiling(sessionId, workflowId);
 
       if (result.pendingApproval) {
-        const happApprovalUrl = buildHappApprovalUrl({
+        const approvalUrl = buildApprovalLandingUrl({
+          issuerBaseUrl: issuerBase,
           approvalId: result.pendingApproval.approvalId,
-          workflowId: result.workflowId,
           requestPath: MCP_REQUEST_PATH
         });
         throw new McpError(ErrorCode.UrlElicitationRequired, result.pendingApproval.message, {
@@ -227,7 +243,7 @@ function createServer(): McpServer {
               elicitationId: result.pendingApproval.approvalId,
               mode: "url",
               message: result.pendingApproval.message,
-              url: happApprovalUrl
+              url: approvalUrl
             }
           ]
         });
@@ -292,9 +308,9 @@ function createServer(): McpServer {
         : [];
       const approvalPayload = approvals.map((approval) => ({
         ...approval,
-        approvalUrl: buildHappApprovalUrl({
+        approvalUrl: buildApprovalLandingUrl({
+          issuerBaseUrl: issuerBase,
           approvalId: approval.approvalId,
-          workflowId: resolvedWorkflowId,
           requestPath: MCP_REQUEST_PATH
         })
       }));
@@ -330,9 +346,9 @@ function createServer(): McpServer {
         pendingApproval: result.pendingApproval
           ? {
               ...result.pendingApproval,
-              approvalUrl: buildHappApprovalUrl({
+              approvalUrl: buildApprovalLandingUrl({
+                issuerBaseUrl: issuerBase,
                 approvalId: result.pendingApproval.approvalId,
-                workflowId: result.workflowId,
                 requestPath: MCP_REQUEST_PATH
               })
             }
@@ -432,9 +448,9 @@ function createServer(): McpServer {
       });
 
       if (request.pendingApproval) {
-        const happApprovalUrl = buildHappApprovalUrl({
+        const approvalUrl = buildApprovalLandingUrl({
+          issuerBaseUrl: issuerBase,
           approvalId: request.pendingApproval.approvalId,
-          requestId: request.requestId,
           requestPath: MCP_REQUEST_PATH
         });
         throw new McpError(ErrorCode.UrlElicitationRequired, request.pendingApproval.message, {
@@ -444,7 +460,7 @@ function createServer(): McpServer {
               elicitationId: request.pendingApproval.approvalId,
               mode: "url",
               message: request.pendingApproval.message,
-              url: happApprovalUrl
+              url: approvalUrl
             }
           ]
         });
@@ -674,9 +690,9 @@ export function buildMcpExpressApp() {
       if (workflowPending) {
         const progressed = await workflowService.approveAndAdvanceByApprovalId(approvalId);
         const nextApprovalUrl = progressed.pendingApproval
-          ? buildHappApprovalUrl({
+          ? buildApprovalLandingUrl({
+              issuerBaseUrl: issuerBase,
               approvalId: progressed.pendingApproval.approvalId,
-              workflowId: progressed.workflowId,
               requestPath: req.path
             })
           : undefined;

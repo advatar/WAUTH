@@ -17,11 +17,13 @@ describe("TaxWorkflowService", () => {
 
     const first = await service.runTaxFiling("session-1");
     expect(first.pendingApproval?.stage).toBe("read_evidence");
+    expect(first.pendingApproval?.message).toContain("Approval needed to continue");
     expect(first.state.status).toBe("pending_approval");
     expect(first.pendingApproval?.approvalUrl).toContain("https://wauth-demo.showntell.dev/iproov/approve");
 
     const second = await service.approveAndAdvanceByApprovalId(first.pendingApproval!.approvalId);
     expect(second.pendingApproval?.stage).toBe("final_submit");
+    expect(second.pendingApproval?.message).toContain("Final approval needed");
 
     const third = await service.approveAndAdvanceByApprovalId(second.pendingApproval!.approvalId);
 
