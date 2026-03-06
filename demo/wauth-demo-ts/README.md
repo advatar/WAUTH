@@ -69,12 +69,18 @@ WAUTH_DEMO_HAPP_MODE=handoff
 ```
 
 Server endpoints:
+- `GET /` (mock RP directory landing page)
 - `POST /mcp` (MCP Streamable HTTP)
+- `GET /bank` (mock bank landing page)
+- `GET /hr` / `GET /employer` (mock HR system landing page)
+- `GET /tax-office` / `GET /irs` (mock tax office landing page)
 - `GET /healthz`
 - `GET /.well-known/aaif-wauth-configuration`
 - `GET /jwks`
 - `GET /iproov/approve` (HAPP handoff page)
-- Vercel serverless endpoints (catch-all): `/api/mcp`, `/api/healthz`, `/api/jwks`, `/api/iproov/approve`
+- Vercel/serverless aliases: `/api`, `/api/bank`, `/api/hr`, `/api/employer`, `/api/tax-office`, `/api/irs`, `/api/mcp`, `/api/healthz`, `/api/jwks`, `/api/iproov/approve`
+
+The RP landing pages are presentation-only surfaces that explain what each mocked RP protects and why WAUTH blocks the agent. The actual RP enforcement in the demo still happens in the in-memory scenario/runtime.
 
 ### Deploy to Vercel
 

@@ -18,6 +18,12 @@ import {
   type HappSessionSnapshot,
   type HappSessionStatus
 } from "./happ-local-ref.js";
+import {
+  findMockRpPage,
+  isMockRpDirectoryPath,
+  renderMockRpDirectoryPage,
+  renderMockRpLandingPage
+} from "./rp-pages.js";
 import { TaxWorkflowService, type PendingApproval as WorkflowPendingApproval } from "./workflow.js";
 import { WauthRequestService, type WauthPendingApproval } from "./wauth-state.js";
 import type { JsonValue } from "./sdk.js";
@@ -979,6 +985,37 @@ export function buildMcpExpressApp(options: {
     "/api/iproov/approve/complete"
   ] as const;
   const healthPaths = ["/healthz", "/api/healthz"] as const;
+  const mockRpPaths = [
+    "/",
+    "/api",
+    "/bank",
+    "/api/bank",
+    "/hr",
+    "/api/hr",
+    "/employer",
+    "/api/employer",
+    "/irs",
+    "/api/irs",
+    "/tax-office",
+    "/api/tax-office"
+  ] as const;
+
+  for (const routePath of mockRpPaths) {
+    app.get(routePath, (req: Request, res: Response) => {
+      if (isMockRpDirectoryPath(req.path)) {
+        res.send(renderMockRpDirectoryPage(req.path));
+        return;
+      }
+
+      const page = findMockRpPage(req.path);
+      if (!page) {
+        res.status(404).send("Not found");
+        return;
+      }
+
+      res.send(renderMockRpLandingPage(page, req.path));
+    });
+  }
 
   for (const routePath of mcpPaths) {
     app.post(routePath, async (req: Request, res: Response) => {
