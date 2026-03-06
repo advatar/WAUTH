@@ -13,6 +13,8 @@ import type { JsonValue } from "./sdk.js";
 
 const DEFAULT_PORT = 3000;
 const DEFAULT_ISSUER = process.env.WAUTH_DEMO_ISSUER ?? "https://wauth-demo.showntell.dev";
+const DEFAULT_HAPP_BASE_URL = process.env.WAUTH_DEMO_HAPP_BASE_URL ?? "https://happ.showntell.dev";
+const MCP_REQUEST_PATH = "/api/mcp";
 
 function trimTrailingSlash(value: string): string {
   return value.endsWith("/") ? value.slice(0, -1) : value;
@@ -20,6 +22,7 @@ function trimTrailingSlash(value: string): string {
 
 const issuerBase = trimTrailingSlash(DEFAULT_ISSUER);
 const approvalBaseUrl = `${issuerBase}/iproov/approve`;
+const happBaseUrl = trimTrailingSlash(DEFAULT_HAPP_BASE_URL);
 
 const workflowService = new TaxWorkflowService({
   dataFilePath: process.env.WAUTH_DEMO_STATE_FILE,
@@ -49,6 +52,68 @@ function queryString(value: unknown): string | undefined {
 
 function asStructuredContent(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
+}
+
+function isApiPath(pathname: string): boolean {
+  return pathname.startsWith("/api/");
+}
+
+function completionPathForRequestPath(pathname: string): string {
+  return isApiPath(pathname)
+    ? "/api/iproov/approve/complete"
+    : "/iproov/approve/complete";
+}
+
+function buildApprovalCompletionUrl(
+  issuer: string,
+  approvalId: string,
+  requestPath: string
+): string {
+  const callbackUrl = new URL(`${issuer}${completionPathForRequestPath(requestPath)}`);
+  callbackUrl.searchParams.set("approval_id", approvalId);
+  return callbackUrl.toString();
+}
+
+export function buildHappApprovalHandoffUrl(options: {
+  happBaseUrl: string;
+  issuerBaseUrl: string;
+  approvalId: string;
+  requestPath: string;
+  workflowId?: string;
+  requestId?: string;
+}): string {
+  const handoffUrl = new URL(options.happBaseUrl);
+  handoffUrl.searchParams.set("approval_id", options.approvalId);
+  handoffUrl.searchParams.set("mode", "verify");
+  handoffUrl.searchParams.set("resource", options.approvalId);
+  handoffUrl.searchParams.set("auto_start", "1");
+  handoffUrl.searchParams.set(
+    "return_url",
+    buildApprovalCompletionUrl(options.issuerBaseUrl, options.approvalId, options.requestPath)
+  );
+  if (options.workflowId) {
+    handoffUrl.searchParams.set("workflow_id", options.workflowId);
+  }
+  if (options.requestId) {
+    handoffUrl.searchParams.set("request_id", options.requestId);
+  }
+  return handoffUrl.toString();
+}
+
+function buildHappApprovalUrl(options: {
+  approvalId: string;
+  requestPath: string;
+  workflowId?: string;
+  requestId?: string;
+}): string {
+  return buildHappApprovalHandoffUrl({
+    happBaseUrl,
+    issuerBaseUrl: issuerBase,
+    approvalId: options.approvalId,
+    requestPath: options.requestPath,
+    workflowId: options.workflowId,
+    requestId: options.requestId
+  });
 }
 
 function approvalPage(options: {
@@ -150,6 +215,11 @@ function createServer(): McpServer {
       const result = await workflowService.runTaxFiling(sessionId, workflowId);
 
       if (result.pendingApproval) {
+        const happApprovalUrl = buildHappApprovalUrl({
+          approvalId: result.pendingApproval.approvalId,
+          workflowId: result.workflowId,
+          requestPath: MCP_REQUEST_PATH
+        });
         throw new McpError(ErrorCode.UrlElicitationRequired, result.pendingApproval.message, {
           workflowId: result.workflowId,
           elicitations: [
@@ -157,7 +227,7 @@ function createServer(): McpServer {
               elicitationId: result.pendingApproval.approvalId,
               mode: "url",
               message: result.pendingApproval.message,
-              url: result.pendingApproval.approvalUrl
+              url: happApprovalUrl
             }
           ]
         });
@@ -220,10 +290,18 @@ function createServer(): McpServer {
       const approvals = resolvedWorkflowId
         ? await workflowService.listPendingApprovals(resolvedWorkflowId)
         : [];
+      const approvalPayload = approvals.map((approval) => ({
+        ...approval,
+        approvalUrl: buildHappApprovalUrl({
+          approvalId: approval.approvalId,
+          workflowId: resolvedWorkflowId,
+          requestPath: MCP_REQUEST_PATH
+        })
+      }));
 
       const payload = {
         workflowId: resolvedWorkflowId,
-        approvals
+        approvals: approvalPayload
       };
 
       return {
@@ -249,7 +327,16 @@ function createServer(): McpServer {
         workflowId: result.workflowId,
         status: result.state.status,
         approvals: result.state.approvals,
-        pendingApproval: result.pendingApproval,
+        pendingApproval: result.pendingApproval
+          ? {
+              ...result.pendingApproval,
+              approvalUrl: buildHappApprovalUrl({
+                approvalId: result.pendingApproval.approvalId,
+                workflowId: result.workflowId,
+                requestPath: MCP_REQUEST_PATH
+              })
+            }
+          : undefined,
         receiptCount: result.result?.receipts.length ?? 0
       };
       return {
@@ -345,6 +432,11 @@ function createServer(): McpServer {
       });
 
       if (request.pendingApproval) {
+        const happApprovalUrl = buildHappApprovalUrl({
+          approvalId: request.pendingApproval.approvalId,
+          requestId: request.requestId,
+          requestPath: MCP_REQUEST_PATH
+        });
         throw new McpError(ErrorCode.UrlElicitationRequired, request.pendingApproval.message, {
           requestId: request.requestId,
           elicitations: [
@@ -352,7 +444,7 @@ function createServer(): McpServer {
               elicitationId: request.pendingApproval.approvalId,
               mode: "url",
               message: request.pendingApproval.message,
-              url: request.pendingApproval.approvalUrl
+              url: happApprovalUrl
             }
           ]
         });
@@ -527,82 +619,92 @@ export function buildMcpExpressApp() {
 
   for (const routePath of approvalPaths) {
     app.get(routePath, async (req: Request, res: Response) => {
-    const approvalId = queryString(req.query.approval_id);
-    if (!approvalId) {
-      res.status(400).send(approvalPage({
-        title: "Approval link invalid",
-        body: "Missing approval_id query parameter."
+      const approvalId = queryString(req.query.approval_id);
+      if (!approvalId) {
+        res.status(400).send(approvalPage({
+          title: "Approval link invalid",
+          body: "Missing approval_id query parameter."
+        }));
+        return;
+      }
+
+      const workflowPending = await workflowService.findPendingApprovalById(approvalId);
+      const wauthPending = workflowPending ? undefined : await wauthService.findPendingApprovalById(approvalId);
+
+      if (!workflowPending && !wauthPending) {
+        res.status(404).send(approvalPage({
+          title: "Approval not found",
+          body: "This approval is no longer pending or has already been used."
+        }));
+        return;
+      }
+
+      const body = workflowPending
+        ? `${workflowPending.approval.message}\n\nWorkflow: ${workflowPending.workflowId}`
+        : `${wauthPending!.message}\n\nRequest: ${wauthPending!.requestId}`;
+
+      const happApprovalUrl = buildHappApprovalUrl({
+        approvalId,
+        requestPath: req.path,
+        workflowId: workflowPending?.workflowId,
+        requestId: wauthPending?.requestId
+      });
+
+      res.send(approvalPage({
+        title: "iProov Approval Required",
+        body: `${body}\n\nContinue in HAPP to complete iProov verification.`,
+        actionUrl: happApprovalUrl,
+        actionLabel: "Continue In HAPP"
       }));
-      return;
-    }
-
-    const workflowPending = await workflowService.findPendingApprovalById(approvalId);
-    const wauthPending = workflowPending ? undefined : await wauthService.findPendingApprovalById(approvalId);
-
-    if (!workflowPending && !wauthPending) {
-      res.status(404).send(approvalPage({
-        title: "Approval not found",
-        body: "This approval is no longer pending or has already been used."
-      }));
-      return;
-    }
-
-    const body = workflowPending
-      ? `${workflowPending.approval.message}\n\nWorkflow: ${workflowPending.workflowId}`
-      : `${wauthPending!.message}\n\nRequest: ${wauthPending!.requestId}`;
-
-    const actionBasePath = req.path.startsWith("/api/")
-      ? "/api/iproov/approve/complete"
-      : "/iproov/approve/complete";
-
-    res.send(approvalPage({
-      title: "iProov Approval Required",
-      body,
-      actionUrl: `${actionBasePath}?approval_id=${encodeURIComponent(approvalId)}`,
-      actionLabel: "Approve With iProov"
-    }));
     });
   }
 
   for (const routePath of approvalCompletePaths) {
     app.get(routePath, async (req: Request, res: Response) => {
-    const approvalId = queryString(req.query.approval_id);
-    if (!approvalId) {
-      res.status(400).send(approvalPage({
-        title: "Approval link invalid",
-        body: "Missing approval_id query parameter."
+      const approvalId = queryString(req.query.approval_id);
+      if (!approvalId) {
+        res.status(400).send(approvalPage({
+          title: "Approval link invalid",
+          body: "Missing approval_id query parameter."
+        }));
+        return;
+      }
+
+      const workflowPending = await workflowService.findPendingApprovalById(approvalId);
+      if (workflowPending) {
+        const progressed = await workflowService.approveAndAdvanceByApprovalId(approvalId);
+        const nextApprovalUrl = progressed.pendingApproval
+          ? buildHappApprovalUrl({
+              approvalId: progressed.pendingApproval.approvalId,
+              workflowId: progressed.workflowId,
+              requestPath: req.path
+            })
+          : undefined;
+        const completionBody = nextApprovalUrl
+          ? `Approved. The flow auto-advanced and now waits for the next human checkpoint.\n\nNext approval URL:\n${nextApprovalUrl}`
+          : "Approved. The tax flow continued automatically and is now complete.";
+
+        res.send(approvalPage({
+          title: "Approval Completed",
+          body: completionBody
+        }));
+        return;
+      }
+
+      const wauthPending = await wauthService.findPendingApprovalById(approvalId);
+      if (wauthPending) {
+        await wauthService.approveByApprovalId(approvalId);
+        res.send(approvalPage({
+          title: "Approval Completed",
+          body: "WAUTH request approved and capability issued."
+        }));
+        return;
+      }
+
+      res.status(404).send(approvalPage({
+        title: "Approval not found",
+        body: "This approval is no longer pending or has already been used."
       }));
-      return;
-    }
-
-    const workflowPending = await workflowService.findPendingApprovalById(approvalId);
-    if (workflowPending) {
-      const progressed = await workflowService.approveAndAdvanceByApprovalId(approvalId);
-      const completionBody = progressed.pendingApproval
-        ? `Approved. The flow auto-advanced and now waits for the next human checkpoint.\n\nNext approval URL:\n${progressed.pendingApproval.approvalUrl}`
-        : `Approved. The tax flow continued automatically and is now complete.`;
-
-      res.send(approvalPage({
-        title: "Approval Completed",
-        body: completionBody
-      }));
-      return;
-    }
-
-    const wauthPending = await wauthService.findPendingApprovalById(approvalId);
-    if (wauthPending) {
-      await wauthService.approveByApprovalId(approvalId);
-      res.send(approvalPage({
-        title: "Approval Completed",
-        body: "WAUTH request approved and capability issued."
-      }));
-      return;
-    }
-
-    res.status(404).send(approvalPage({
-      title: "Approval not found",
-      body: "This approval is no longer pending or has already been used."
-    }));
     });
   }
 

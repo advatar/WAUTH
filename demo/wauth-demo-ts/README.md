@@ -54,7 +54,7 @@ Server endpoints:
 - `GET /healthz`
 - `GET /.well-known/aaif-wauth-configuration`
 - `GET /jwks`
-- `GET /iproov/approve` (approval UI shown by URL elicitation)
+- `GET /iproov/approve` (HAPP handoff page)
 - Vercel serverless endpoints (catch-all): `/api/mcp`, `/api/healthz`, `/api/jwks`, `/api/iproov/approve`
 
 ### Deploy to Vercel
@@ -66,6 +66,7 @@ npx vercel --prod
 
 Set environment variable in Vercel project:
 - `WAUTH_DEMO_ISSUER=https://wauth-demo.showntell.dev/api`
+- `WAUTH_DEMO_HAPP_BASE_URL=https://happ.showntell.dev`
 - `WAUTH_DEMO_STATE_FILE=/tmp/wauth-demo/workflow-state.json`
 - `WAUTH_DEMO_WAUTH_STATE_FILE=/tmp/wauth-demo/wauth-state.json`
 
@@ -79,7 +80,7 @@ Register the MCP endpoint in your ChatGPT app, then in chat use:
 
 The model should call `aaif.demo.tax.file` and run automatically until approval is required.
 When iProov approval is needed, the tool raises MCP URL elicitation (`-32042`) with an approval URL.
-Open that URL and click approve. The server auto-advances to the next gate or completion.
+Open that URL, complete verification in HAPP, and return via callback. The server auto-advances to the next gate or completion.
 If your client does not auto-resume tool execution, call `aaif.demo.tax.file` again.
 
 Useful tools:

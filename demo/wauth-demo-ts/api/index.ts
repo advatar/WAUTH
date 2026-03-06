@@ -1,18 +1,27 @@
-import { buildMcpExpressApp } from "../src/mcp-server.js";
+import { normalizeKnownEnvVars, prepareRequestUrl } from "../src/serverless-routing.js";
 
-const app = buildMcpExpressApp();
+type RequestHandler = (req: any, res: any) => unknown;
 
-export default function handler(req: any, res: any) {
-  const parsed = new URL(req.url ?? "/", "http://localhost");
-  const rewrittenPath = parsed.searchParams.get("__path");
+let appPromise: Promise<RequestHandler> | undefined;
 
-  if (rewrittenPath) {
-    parsed.searchParams.delete("__path");
-    const queryString = parsed.searchParams.toString();
-    req.url = queryString.length > 0
-      ? `${rewrittenPath}?${queryString}`
-      : rewrittenPath;
+async function getApp(): Promise<RequestHandler> {
+  if (!appPromise) {
+    appPromise = (async () => {
+      normalizeKnownEnvVars(process.env);
+      const { buildMcpExpressApp } = await import("../src/mcp-server.js");
+      return buildMcpExpressApp() as unknown as RequestHandler;
+    })();
   }
 
+  return appPromise;
+}
+
+export default async function handler(req: any, res: any) {
+  const prepared = prepareRequestUrl(req.url);
+  if (prepared.wasRewritten) {
+    req.url = prepared.requestUrl;
+  }
+
+  const app = await getApp();
   return app(req, res);
 }
