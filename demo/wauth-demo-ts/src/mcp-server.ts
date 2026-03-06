@@ -12,7 +12,10 @@ import {
   HappLocalRefClient,
   localHappRefAvailable,
   verifyHappEnvelope,
+  type HappApprovalRequest,
+  type HappRequestResult,
   type HappPendingSession,
+  type HappSessionSnapshot,
   type HappSessionStatus
 } from "./happ-local-ref.js";
 import { TaxWorkflowService, type PendingApproval as WorkflowPendingApproval } from "./workflow.js";
@@ -41,10 +44,13 @@ type DemoHappRuntime =
     }
   | {
       mode: "local-ref";
-      client: HappLocalRefClient;
+      client: {
+        requestApproval(input: HappApprovalRequest): Promise<HappRequestResult>;
+        getSessionSnapshot(sessionId: string): Promise<HappSessionSnapshot>;
+      };
     };
 
-interface DemoRuntime {
+export interface DemoRuntime {
   workflowService: TaxWorkflowService;
   wauthService: WauthRequestService;
   happ: DemoHappRuntime;
@@ -466,34 +472,24 @@ async function approvalStatusForSession(
 async function approvalStatusPayload(runtime: DemoRuntime, approvalId: string): Promise<Record<string, JsonValue>> {
   const pending = await findPendingApproval(runtime, approvalId);
   if (pending.kind === "none") {
-    return {
-      approvalId,
-      status: "not_found"
-    };
+    return { status: "not_found" };
   }
 
   if (runtime.happ.mode !== "local-ref") {
-    return {
-      approvalId,
-      status: "unsupported"
-    };
+    return { status: "unsupported" };
   }
 
   const happ = pending.kind === "workflow"
     ? await ensureWorkflowHappSession(runtime, pending.workflowId, pending.approval)
     : await ensureWauthHappSession(runtime, pending.approval);
   if (!happ) {
-    return {
-      approvalId,
-      status: "unknown"
-    };
+    return { status: "unknown" };
   }
 
   const status = await approvalStatusForSession(runtime, happ);
   return {
-    approvalId,
     status,
-    happSessionId: happ.sessionId
+    sessionUrl: happ.sessionUrl
   };
 }
 
@@ -501,13 +497,14 @@ async function completeWorkflowApprovalWithHapp(
   runtime: DemoRuntime,
   workflowId: string,
   approval: WorkflowPendingApproval,
-  requestPath: string
+  requestPath: string,
+  issuerBaseUrl: string
 ): Promise<ApprovalCompletionResult> {
   if (runtime.happ.mode !== "local-ref") {
     const progressed = await runtime.workflowService.approveAndAdvanceByApprovalId(approval.approvalId);
     const nextApprovalUrl = progressed.pendingApproval
       ? buildApprovalLandingUrl({
-          issuerBaseUrl: issuerBase,
+          issuerBaseUrl,
           approvalId: progressed.pendingApproval.approvalId,
           requestPath
         })
@@ -558,7 +555,7 @@ async function completeWorkflowApprovalWithHapp(
       envelope: result.credential,
       actionIntent: happ.actionIntent,
       requirements: happ.requirements,
-      expectedAudience: issuerBase
+      expectedAudience: issuerBaseUrl
     });
     await runtime.workflowService.recordHappCredential(approval.approvalId, result.credential);
   }
@@ -566,7 +563,7 @@ async function completeWorkflowApprovalWithHapp(
   const progressed = await runtime.workflowService.approveAndAdvanceByApprovalId(approval.approvalId);
   const nextApprovalUrl = progressed.pendingApproval
     ? buildApprovalLandingUrl({
-        issuerBaseUrl: issuerBase,
+        issuerBaseUrl,
         approvalId: progressed.pendingApproval.approvalId,
         requestPath
       })
@@ -581,7 +578,8 @@ async function completeWorkflowApprovalWithHapp(
 
 async function completeWauthApprovalWithHapp(
   runtime: DemoRuntime,
-  approval: WauthPendingApproval
+  approval: WauthPendingApproval,
+  issuerBaseUrl: string
 ): Promise<ApprovalCompletionResult> {
   if (runtime.happ.mode !== "local-ref") {
     await runtime.wauthService.approveByApprovalId(approval.approvalId);
@@ -629,7 +627,7 @@ async function completeWauthApprovalWithHapp(
       envelope: result.credential,
       actionIntent: happ.actionIntent,
       requirements: happ.requirements,
-      expectedAudience: issuerBase
+      expectedAudience: issuerBaseUrl
     });
     await runtime.wauthService.recordHappCredential(approval.approvalId, result.credential);
   }
@@ -960,8 +958,13 @@ export async function startMcpHttpServer(port = DEFAULT_PORT): Promise<void> {
   });
 }
 
-export function buildMcpExpressApp() {
+export function buildMcpExpressApp(options: {
+  runtime?: DemoRuntime;
+  issuerBaseUrl?: string;
+} = {}) {
   const app = createMcpExpressApp({ host: "0.0.0.0" });
+  const providedRuntime = options.runtime;
+  const resolvedIssuerBaseUrl = trimTrailingSlash(options.issuerBaseUrl ?? issuerBase);
   const transports: Record<string, StreamableHTTPServerTransport> = {};
   const mcpPaths = ["/mcp", "/api/mcp"] as const;
   const configPaths = [
@@ -1060,7 +1063,7 @@ export function buildMcpExpressApp() {
 
   for (const routePath of configPaths) {
     app.get(routePath, async (_req: Request, res: Response) => {
-      const runtime = await getRuntime();
+      const runtime = providedRuntime ?? await getRuntime();
       const metadata = await runtime.wauthService.metadata();
       res.json(metadata);
     });
@@ -1068,7 +1071,7 @@ export function buildMcpExpressApp() {
 
   for (const routePath of jwksPaths) {
     app.get(routePath, async (_req: Request, res: Response) => {
-      const runtime = await getRuntime();
+      const runtime = providedRuntime ?? await getRuntime();
       const jwks = await runtime.wauthService.jwks();
       res.json(jwks);
     });
@@ -1076,7 +1079,7 @@ export function buildMcpExpressApp() {
 
   for (const routePath of approvalPaths) {
     app.get(routePath, async (req: Request, res: Response) => {
-      const runtime = await getRuntime();
+      const runtime = providedRuntime ?? await getRuntime();
       const approvalId = queryString(req.query.approval_id);
       if (!approvalId) {
         res.status(400).send(approvalPage({
@@ -1118,11 +1121,11 @@ export function buildMcpExpressApp() {
           actionLabel: "Open HAPP Approval",
           actionTarget: "_blank",
           statusUrl: buildApprovalStatusUrl({
-            issuerBaseUrl: issuerBase,
+            issuerBaseUrl: resolvedIssuerBaseUrl,
             approvalId,
             requestPath: req.path
           }),
-          completionUrl: buildApprovalCompletionUrl(issuerBase, approvalId, req.path),
+          completionUrl: buildApprovalCompletionUrl(resolvedIssuerBaseUrl, approvalId, req.path),
           statusMessage: "Waiting for HAPP approval..."
         }));
         return;
@@ -1130,7 +1133,7 @@ export function buildMcpExpressApp() {
 
       const happApprovalUrl = buildHappApprovalHandoffUrl({
         happBaseUrl: runtime.happ.baseUrl,
-        issuerBaseUrl: issuerBase,
+        issuerBaseUrl: resolvedIssuerBaseUrl,
         approvalId,
         requestPath: req.path,
         workflowId: pending.kind === "workflow" ? pending.workflowId : undefined,
@@ -1147,7 +1150,7 @@ export function buildMcpExpressApp() {
 
   for (const routePath of approvalStatusPaths) {
     app.get(routePath, async (req: Request, res: Response) => {
-      const runtime = await getRuntime();
+      const runtime = providedRuntime ?? await getRuntime();
       const approvalId = queryString(req.query.approval_id);
       if (!approvalId) {
         res.status(400).json({
@@ -1164,7 +1167,7 @@ export function buildMcpExpressApp() {
 
   for (const routePath of approvalCompletePaths) {
     app.get(routePath, async (req: Request, res: Response) => {
-      const runtime = await getRuntime();
+      const runtime = providedRuntime ?? await getRuntime();
       const approvalId = queryString(req.query.approval_id);
       if (!approvalId) {
         res.status(400).send(approvalPage({
@@ -1184,12 +1187,12 @@ export function buildMcpExpressApp() {
       }
 
       const completion = pending.kind === "workflow"
-        ? await completeWorkflowApprovalWithHapp(runtime, pending.workflowId, pending.approval, req.path)
-        : await completeWauthApprovalWithHapp(runtime, pending.approval);
+        ? await completeWorkflowApprovalWithHapp(runtime, pending.workflowId, pending.approval, req.path, resolvedIssuerBaseUrl)
+        : await completeWauthApprovalWithHapp(runtime, pending.approval, resolvedIssuerBaseUrl);
       const statusCode = completion.status === "approved"
         ? 200
         : completion.status === "pending"
-          ? 202
+          ? 409
           : completion.status === "denied"
             ? 409
             : 404;
@@ -1199,7 +1202,7 @@ export function buildMcpExpressApp() {
           : completion.status === "denied"
             ? "Approval Denied"
             : completion.status === "pending"
-              ? "Approval Pending"
+              ? "Approval Still Pending"
               : "Approval not found",
         body: completion.body
       }));
@@ -1208,7 +1211,7 @@ export function buildMcpExpressApp() {
 
   for (const routePath of healthPaths) {
     app.get(routePath, async (_req: Request, res: Response) => {
-      const runtime = await getRuntime();
+      const runtime = providedRuntime ?? await getRuntime();
       res.json({
         ok: true,
         service: "wauth-demo-mcp",
