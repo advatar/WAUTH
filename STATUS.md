@@ -1,10 +1,9 @@
 # Status
 
-## Current Task: Deploy the WAUTH demo to Vercel
+## Current Task: Push the deployed `main` commits to `origin`
 
-- [x] Verify `demo/wauth-demo-ts` locally before deployment
-- [x] Deploy the current `main` state to Vercel production
-- [x] Record the deployment result and commit only task-tracker changes
+- [ ] Push local `main` commits to `origin/main`
+- [ ] Verify the branch is in sync after the push
 
 Deployment result (2026-03-07):
 - Production deployment: `https://wauth-demo-ts.vercel.app`
