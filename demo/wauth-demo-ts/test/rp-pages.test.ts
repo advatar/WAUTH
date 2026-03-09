@@ -51,4 +51,35 @@ describe("mock RP landing pages", () => {
     expect(taxHtml).toContain("Civic Revenue Filing Gateway");
     expect(taxHtml).toContain("https://irs.demo.local/api/submit");
   });
+
+  it("serves protected resource metadata and requirements templates for mock RPs", async () => {
+    const baseUrl = await listen();
+
+    const bankPrmResponse = await fetch(`${baseUrl}/api/bank/.well-known/oauth-protected-resource`);
+    expect(bankPrmResponse.status).toBe(200);
+    const bankPrm = await bankPrmResponse.json();
+    expect(bankPrm.resource).toBe(`${baseUrl}/api/bank`);
+    expect(bankPrm.wauth.supported).toBe(true);
+    expect(bankPrm.wauth.profiles_supported).toContain("aaif.wauth.profile.rp-protected-resource-metadata/v0.1");
+    expect(bankPrm.wauth.profiles_supported).toContain("aaif.wauth.profile.rp-requirements-signaling/v0.1");
+    expect(bankPrm.wauth.requirements_uri).toBe(`${baseUrl}/api/bank/.well-known/wauth-requirements`);
+
+    const bankRequirementsResponse = await fetch(bankPrm.wauth.requirements_uri);
+    expect(bankRequirementsResponse.status).toBe(200);
+    const bankRequirements = await bankRequirementsResponse.json();
+    expect(bankRequirements.max_capability_ttl_seconds).toBe(900);
+    expect(bankRequirements.authorization_details[0].action_profile).toBe("aaif.wauth.action.bank.read_statement/v0.1");
+    expect(bankRequirements.authorization_details[0].locations).toEqual(["https://bank.demo.local/api/statement"]);
+    expect(bankRequirements.authorization_details[0].action_hash).toBeUndefined();
+
+    const taxPrmResponse = await fetch(`${baseUrl}/api/irs/.well-known/oauth-protected-resource`);
+    expect(taxPrmResponse.status).toBe(200);
+    const taxPrm = await taxPrmResponse.json();
+    expect(taxPrm.resource).toBe(`${baseUrl}/api/irs`);
+
+    const taxRequirements = await fetch(taxPrm.wauth.requirements_uri).then((response) => response.json());
+    expect(taxRequirements.max_capability_ttl_seconds).toBe(300);
+    expect(taxRequirements.authorization_details[0].assurance.min_pohp).toBe(2);
+    expect(taxRequirements.authorization_details[0].action_profile).toBe("aaif.wauth.action.irs.submit_return/v0.1");
+  });
 });

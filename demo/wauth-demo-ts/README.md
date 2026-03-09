@@ -74,11 +74,13 @@ Server endpoints:
 - `GET /bank` (mock bank landing page)
 - `GET /hr` / `GET /employer` (mock HR system landing page)
 - `GET /tax-office` / `GET /irs` (mock tax office landing page)
+- `GET /bank/.well-known/oauth-protected-resource` and equivalent RP path variants
+- `GET /bank/.well-known/wauth-requirements` and equivalent RP path variants
 - `GET /healthz`
 - `GET /.well-known/aaif-wauth-configuration`
 - `GET /jwks`
 - `GET /iproov/approve` (HAPP handoff page)
-- Vercel/serverless aliases: `/api`, `/api/bank`, `/api/hr`, `/api/employer`, `/api/tax-office`, `/api/irs`, `/api/mcp`, `/api/healthz`, `/api/jwks`, `/api/iproov/approve`
+- Vercel/serverless aliases: `/api`, `/api/bank`, `/api/hr`, `/api/employer`, `/api/tax-office`, `/api/irs`, `/api/mcp`, `/api/healthz`, `/api/jwks`, `/api/iproov/approve`, and the matching `/api/.../.well-known/...` RP metadata routes
 
 The RP landing pages are presentation-only surfaces that explain what each mocked RP protects and why WAUTH blocks the agent. The actual RP enforcement in the demo still happens in the in-memory scenario/runtime.
 

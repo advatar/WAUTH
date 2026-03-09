@@ -22,7 +22,8 @@ import {
   findMockRpPage,
   isMockRpDirectoryPath,
   renderMockRpDirectoryPage,
-  renderMockRpLandingPage
+  renderMockRpLandingPage,
+  type MockRpPage
 } from "./rp-pages.js";
 import { TaxWorkflowService, type PendingApproval as WorkflowPendingApproval } from "./workflow.js";
 import { WauthRequestService, type WauthPendingApproval } from "./wauth-state.js";
@@ -34,6 +35,11 @@ const DEFAULT_HAPP_BASE_URL = process.env.WAUTH_DEMO_HAPP_BASE_URL ?? "https://h
 const DEFAULT_HAPP_MODE = process.env.WAUTH_DEMO_HAPP_MODE
   ?? (localHappRefAvailable() ? "local-ref" : "handoff");
 const MCP_REQUEST_PATH = "/api/mcp";
+const WAUTH_ACTION_DETAILS_TYPE = "https://schemas.aaif.io/wauth/rar/wauth-action-authorization-details/v0.1";
+const WAUTH_RP_PRM_PROFILE = "aaif.wauth.profile.rp-protected-resource-metadata/v0.1";
+const WAUTH_RP_REQSIG_PROFILE = "aaif.wauth.profile.rp-requirements-signaling/v0.1";
+const RP_PRM_SUFFIX = "/.well-known/oauth-protected-resource";
+const RP_REQUIREMENTS_SUFFIX = "/.well-known/wauth-requirements";
 
 function trimTrailingSlash(value: string): string {
   return value.endsWith("/") ? value.slice(0, -1) : value;
@@ -163,6 +169,100 @@ function buildApprovalStatusUrl(options: {
   const statusUrl = new URL(approvalStatusPathForRequestPath(options.requestPath), options.issuerBaseUrl.trim());
   statusUrl.searchParams.set("approval_id", options.approvalId);
   return statusUrl.toString();
+}
+
+function stripKnownSuffix(pathname: string, suffix: string): string | undefined {
+  return pathname.endsWith(suffix) ? pathname.slice(0, -suffix.length) || "/" : undefined;
+}
+
+function externalOriginForRequest(req: Request, fallbackBaseUrl: string): string {
+  const forwardedProto = req.get("x-forwarded-proto");
+  const forwardedHost = req.get("x-forwarded-host");
+  const host = forwardedHost ?? req.get("host");
+  if (!host) {
+    return trimTrailingSlash(fallbackBaseUrl);
+  }
+  const proto = forwardedProto
+    ? forwardedProto.split(",")[0]!.trim()
+    : req.protocol;
+  return `${proto}://${host}`;
+}
+
+function absoluteUrl(origin: string, pathname: string): string {
+  return new URL(pathname, `${trimTrailingSlash(origin)}/`).toString();
+}
+
+function scopesForMockRp(page: MockRpPage): string[] {
+  switch (page.slug) {
+    case "bank":
+      return ["statement:read"];
+    case "hr":
+      return ["income:read"];
+    case "tax-office":
+      return ["filing:submit"];
+  }
+}
+
+function actionsForMockRp(page: MockRpPage): string[] {
+  switch (page.slug) {
+    case "bank":
+      return ["read_statement"];
+    case "hr":
+      return ["read_income"];
+    case "tax-office":
+      return ["submit_return"];
+  }
+}
+
+function minPoHpForMockRp(page: MockRpPage): number {
+  return page.slug === "tax-office" ? 2 : 1;
+}
+
+function buildMockRpProtectedResourceMetadata(options: {
+  page: MockRpPage;
+  resourcePath: string;
+  origin: string;
+  authorizationServer: string;
+}): Record<string, JsonValue> {
+  const requirementsUri = absoluteUrl(options.origin, `${options.resourcePath}${RP_REQUIREMENTS_SUFFIX}`);
+  return {
+    resource: absoluteUrl(options.origin, options.resourcePath),
+    authorization_servers: [options.authorizationServer],
+    bearer_methods_supported: ["header"],
+    scopes_supported: scopesForMockRp(options.page),
+    wauth: {
+      supported: true,
+      profiles_supported: [WAUTH_RP_PRM_PROFILE, WAUTH_RP_REQSIG_PROFILE],
+      capability_formats_supported: ["jwt"],
+      authorization_details_types_supported: [WAUTH_ACTION_DETAILS_TYPE],
+      sender_constraint_methods_supported: ["dpop"],
+      requirement_signaling_methods_supported: ["wauth_required"],
+      requirements_uri: requirementsUri,
+      documentation_uri: absoluteUrl(options.origin, options.resourcePath)
+    }
+  };
+}
+
+function buildMockRpRequirements(page: MockRpPage): Record<string, JsonValue> {
+  return {
+    authorization_details: [
+      {
+        type: WAUTH_ACTION_DETAILS_TYPE,
+        actions: actionsForMockRp(page),
+        locations: [page.audience],
+        action_profile: page.actionProfile,
+        hash_alg: "S256",
+        assurance: {
+          min_pohp: minPoHpForMockRp(page)
+        },
+        envelope: {
+          max_uses: 1
+        }
+      }
+    ],
+    satisfy: "all",
+    max_capability_ttl_seconds: page.slug === "tax-office" ? 300 : 900
+  };
 }
 
 export function buildHappApprovalHandoffUrl(options: {
@@ -999,6 +1099,9 @@ export function buildMcpExpressApp(options: {
     "/tax-office",
     "/api/tax-office"
   ] as const;
+  const mockRpSurfacePaths = mockRpPaths.filter((path) => path !== "/" && path !== "/api");
+  const mockRpPrmPaths = mockRpSurfacePaths.map((path) => `${path}${RP_PRM_SUFFIX}`);
+  const mockRpRequirementsPaths = mockRpSurfacePaths.map((path) => `${path}${RP_REQUIREMENTS_SUFFIX}`);
 
   for (const routePath of mockRpPaths) {
     app.get(routePath, (req: Request, res: Response) => {
@@ -1014,6 +1117,48 @@ export function buildMcpExpressApp(options: {
       }
 
       res.send(renderMockRpLandingPage(page, req.path));
+    });
+  }
+
+  for (const routePath of mockRpPrmPaths) {
+    app.get(routePath, (req: Request, res: Response) => {
+      const resourcePath = stripKnownSuffix(req.path, RP_PRM_SUFFIX);
+      if (!resourcePath) {
+        res.status(404).json({ error: "not_found" });
+        return;
+      }
+
+      const page = findMockRpPage(resourcePath);
+      if (!page) {
+        res.status(404).json({ error: "not_found" });
+        return;
+      }
+
+      const origin = externalOriginForRequest(req, resolvedIssuerBaseUrl);
+      res.json(buildMockRpProtectedResourceMetadata({
+        page,
+        resourcePath,
+        origin,
+        authorizationServer: resolvedIssuerBaseUrl
+      }));
+    });
+  }
+
+  for (const routePath of mockRpRequirementsPaths) {
+    app.get(routePath, (req: Request, res: Response) => {
+      const resourcePath = stripKnownSuffix(req.path, RP_REQUIREMENTS_SUFFIX);
+      if (!resourcePath) {
+        res.status(404).json({ error: "not_found" });
+        return;
+      }
+
+      const page = findMockRpPage(resourcePath);
+      if (!page) {
+        res.status(404).json({ error: "not_found" });
+        return;
+      }
+
+      res.json(buildMockRpRequirements(page));
     });
   }
 

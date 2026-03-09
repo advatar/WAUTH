@@ -326,6 +326,40 @@ class TestVectors(unittest.TestCase):
         self.assertFalse(result.ok)
         self.assertTrue(any("JWT verification failed" in err for err in result.errors))
 
+    def test_capability_verification_fails_on_action_hash_mismatch(self):
+        now = 1_700_000_000
+        private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        public_jwk = json.loads(jwt.algorithms.RSAAlgorithm.to_jwk(private_key.public_key()))
+        public_jwk["kid"] = "py-test-rsa-key-mismatch"
+        public_jwk["alg"] = "RS256"
+        public_jwk["use"] = "sig"
+        jwks = {"keys": [public_jwk]}
+
+        token = jwt.encode(
+            {
+                "iss": "https://wauth.example",
+                "aud": "https://rp.example/api/payments",
+                "iat": now,
+                "exp": now + 600,
+                "jti": "cap-jti-mismatch",
+                "action_hash": "sha256:test",
+            },
+            private_key,
+            algorithm="RS256",
+            headers={"kid": "py-test-rsa-key-mismatch", "typ": "JWT"},
+        )
+
+        result = verify_capability_jwt_with_jwks(
+            token=token,
+            jwks=jwks,
+            expected_issuer="https://wauth.example",
+            expected_audience="https://rp.example/api/payments",
+            expected_action_hash="sha256:not-the-same",
+            now_epoch_seconds=now + 10,
+        )
+        self.assertFalse(result.ok)
+        self.assertIn("action hash mismatch", result.errors)
+
     def test_jwks_cache_fetch_and_refresh(self):
         calls = []
         now = 1_700_000_000

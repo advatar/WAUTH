@@ -318,6 +318,27 @@ fn jwt_verification_fails_for_tampered_token() {
 }
 
 #[test]
+fn capability_verification_fails_on_action_hash_mismatch() {
+    let now = 1_700_000_000;
+    let token = build_test_token(now);
+    let jwks = build_test_jwks();
+
+    let result = verify_capability_jwt_with_jwks(
+        &token,
+        &jwks,
+        Some("https://wauth.example"),
+        "https://rp.example/api/payments",
+        "sha256:not-the-same",
+        Some(now + 10),
+        120,
+        None,
+    );
+
+    assert!(!result.ok);
+    assert!(result.errors.iter().any(|error| error == "action hash mismatch"));
+}
+
+#[test]
 fn jwks_cache_fetch_and_refresh() {
     let mut calls: Vec<String> = Vec::new();
     let mut jwks_version = 0;
