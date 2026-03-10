@@ -56,6 +56,7 @@ From the repo root:
 ./scripts/wauth-demo.sh serve --handoff
 ./scripts/wauth-demo.sh serve --local-happ
 ./scripts/wauth-demo.sh serve --port 3333
+./scripts/wauth-demo.sh serve --host 127.0.0.1
 ./scripts/wauth-demo.sh build-static
 ```
 
@@ -144,8 +145,11 @@ npx vercel --prod
 Set environment variable in Vercel project:
 - `WAUTH_DEMO_ISSUER=https://wauth-demo.showntell.dev/api`
 - `WAUTH_DEMO_HAPP_BASE_URL=https://happ.showntell.dev`
+- `WAUTH_DEMO_ALLOWED_HOSTS=wauth-demo.showntell.dev`
 - `WAUTH_DEMO_STATE_FILE=/tmp/wauth-demo/workflow-state.json`
 - `WAUTH_DEMO_WAUTH_STATE_FILE=/tmp/wauth-demo/wauth-state.json`
+
+The server now enables explicit Host header validation. `localhost`, `127.0.0.1`, the issuer hostname, and `VERCEL_URL` are allowed automatically. Add any extra deployment domains through `WAUTH_DEMO_ALLOWED_HOSTS`.
 
 Use MCP endpoint in ChatGPT:
 - `https://wauth-demo.showntell.dev/api/mcp`

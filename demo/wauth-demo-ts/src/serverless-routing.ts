@@ -7,7 +7,9 @@ const MCP_PATH_ALIASES: Record<string, string> = {
 
 const NORMALIZED_ENV_KEYS = [
   "WAUTH_DEMO_ISSUER",
-  "WAUTH_DEMO_HAPP_BASE_URL"
+  "WAUTH_DEMO_HAPP_BASE_URL",
+  "WAUTH_DEMO_ALLOWED_HOSTS",
+  "WAUTH_DEMO_BIND_HOST"
 ] as const;
 
 export interface PreparedRequestUrl {

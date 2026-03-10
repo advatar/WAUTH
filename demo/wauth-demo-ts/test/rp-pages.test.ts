@@ -1,4 +1,4 @@
-import { createServer, type Server } from "node:http";
+import { createServer, request, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 
 import { afterEach, describe, expect, it } from "vitest";
@@ -86,5 +86,37 @@ describe("mock RP landing pages", () => {
     expect(taxRequirements.max_capability_ttl_seconds).toBe(300);
     expect(taxRequirements.authorization_details[0].assurance.min_pohp).toBe(2);
     expect(taxRequirements.authorization_details[0].action_profile).toBe("aaif.wauth.action.irs.submit_return/v0.1");
+  });
+
+  it("rejects requests with an invalid host header", async () => {
+    const baseUrl = await listen();
+    const url = new URL(`${baseUrl}/healthz`);
+
+    const result = await new Promise<{ statusCode?: number; body: string }>((resolve, reject) => {
+      const req = request({
+        host: url.hostname,
+        port: Number(url.port),
+        path: url.pathname,
+        method: "GET",
+        headers: {
+          host: "evil.example"
+        }
+      }, (res) => {
+        let body = "";
+        res.setEncoding("utf8");
+        res.on("data", (chunk) => {
+          body += chunk;
+        });
+        res.on("end", () => resolve({
+          statusCode: res.statusCode,
+          body
+        }));
+      });
+      req.on("error", reject);
+      req.end();
+    });
+
+    expect(result.statusCode).toBe(403);
+    expect(result.body).toContain("Invalid Host");
   });
 });

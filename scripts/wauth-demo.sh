@@ -14,7 +14,7 @@ Usage:
   ./scripts/wauth-demo.sh setup
   ./scripts/wauth-demo.sh test
   ./scripts/wauth-demo.sh scenario
-  ./scripts/wauth-demo.sh serve [--handoff|--local-happ] [--port PORT]
+  ./scripts/wauth-demo.sh serve [--handoff|--local-happ] [--port PORT] [--host HOST]
   ./scripts/wauth-demo.sh build-static
   ./scripts/wauth-demo.sh help
 
@@ -29,11 +29,14 @@ Options for 'serve':
   --handoff     Force redirect-only HAPP handoff mode.
   --local-happ  Force local reference HAPP mode.
   --port PORT   Listen on a different local port. Default: 3000.
+  --host HOST   Bind host. Default: 127.0.0.1.
 
 Environment:
   WAUTH_DEMO_RUNTIME_DIR       Override local runtime state directory.
   WAUTH_DEMO_HAPP_MODE         Override HAPP mode directly.
   WAUTH_DEMO_HAPP_BASE_URL     Override remote HAPP base URL in handoff mode.
+  WAUTH_DEMO_ALLOWED_HOSTS     Comma-separated extra Host header allowlist entries.
+  WAUTH_DEMO_BIND_HOST         Override bind host for local serve.
   WAUTH_DEMO_STATE_FILE        Override workflow state file.
   WAUTH_DEMO_WAUTH_STATE_FILE  Override WAUTH request state file.
 EOF
@@ -78,6 +81,7 @@ run_serve() {
   ensure_dependencies
 
   local port="$DEFAULT_PORT"
+  local bind_host="${WAUTH_DEMO_BIND_HOST:-127.0.0.1}"
   local happ_mode="${WAUTH_DEMO_HAPP_MODE:-}"
 
   while [[ $# -gt 0 ]]; do
@@ -98,6 +102,14 @@ run_serve() {
         port="$2"
         shift 2
         ;;
+      --host)
+        if [[ $# -lt 2 ]]; then
+          echo "--host requires a value" >&2
+          exit 1
+        fi
+        bind_host="$2"
+        shift 2
+        ;;
       *)
         echo "Unknown serve option: $1" >&2
         usage
@@ -108,8 +120,16 @@ run_serve() {
 
   mkdir -p "$DEFAULT_RUNTIME_DIR"
 
+  local issuer_host="$bind_host"
+  if [[ "$issuer_host" == "0.0.0.0" ]]; then
+    issuer_host="127.0.0.1"
+  elif [[ "$issuer_host" == "::" ]]; then
+    issuer_host="[::1]"
+  fi
+
   export PORT="$port"
-  export WAUTH_DEMO_ISSUER="${WAUTH_DEMO_ISSUER:-http://127.0.0.1:${port}}"
+  export WAUTH_DEMO_BIND_HOST="$bind_host"
+  export WAUTH_DEMO_ISSUER="${WAUTH_DEMO_ISSUER:-http://${issuer_host}:${port}}"
   export WAUTH_DEMO_STATE_FILE="${WAUTH_DEMO_STATE_FILE:-$DEFAULT_RUNTIME_DIR/workflow-state.json}"
   export WAUTH_DEMO_WAUTH_STATE_FILE="${WAUTH_DEMO_WAUTH_STATE_FILE:-$DEFAULT_RUNTIME_DIR/wauth-state.json}"
 
@@ -121,6 +141,7 @@ run_serve() {
 Starting WAUTH demo server
   Repo root:      $ROOT_DIR
   Demo dir:       $DEMO_DIR
+  Bind host:      $WAUTH_DEMO_BIND_HOST
   Port:           $PORT
   Issuer:         $WAUTH_DEMO_ISSUER
   HAPP mode:      ${WAUTH_DEMO_HAPP_MODE:-auto}
@@ -128,9 +149,9 @@ Starting WAUTH demo server
   WAUTH state:    $WAUTH_DEMO_WAUTH_STATE_FILE
 
 Open after startup:
-  Landing pages:  http://127.0.0.1:${PORT}/
-  MCP endpoint:   http://127.0.0.1:${PORT}/mcp
-  Health check:   http://127.0.0.1:${PORT}/healthz
+  Landing pages:  ${WAUTH_DEMO_ISSUER}/
+  MCP endpoint:   ${WAUTH_DEMO_ISSUER}/mcp
+  Health check:   ${WAUTH_DEMO_ISSUER}/healthz
 EOF
 
   (cd "$DEMO_DIR" && npm run serve:mcp)

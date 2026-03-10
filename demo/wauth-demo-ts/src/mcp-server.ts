@@ -42,6 +42,7 @@ import type { JsonValue } from "./sdk.js";
 const DEFAULT_PORT = 3000;
 const DEFAULT_ISSUER = process.env.WAUTH_DEMO_ISSUER ?? "https://wauth-demo.showntell.dev";
 const DEFAULT_HAPP_BASE_URL = process.env.WAUTH_DEMO_HAPP_BASE_URL ?? "https://happ.showntell.dev";
+const DEFAULT_BIND_HOST = process.env.WAUTH_DEMO_BIND_HOST ?? "127.0.0.1";
 const DEFAULT_HAPP_MODE = process.env.WAUTH_DEMO_HAPP_MODE
   ?? (localHappRefAvailable() ? "local-ref" : "handoff");
 const MCP_REQUEST_PATH = "/api/mcp";
@@ -212,6 +213,41 @@ function absoluteUrl(origin: string, pathname: string): string {
 function absoluteRequestUrl(req: Request, fallbackBaseUrl: string): string {
   const origin = externalOriginForRequest(req, fallbackBaseUrl);
   return new URL(req.originalUrl || req.url, `${trimTrailingSlash(origin)}/`).toString();
+}
+
+function normalizeAllowedHost(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return undefined;
+  }
+  try {
+    return new URL(trimmed.includes("://") ? trimmed : `http://${trimmed}`).hostname;
+  } catch {
+    return undefined;
+  }
+}
+
+function resolveAllowedHosts(issuerBaseUrl: string): string[] {
+  const hosts = new Set<string>(["127.0.0.1", "localhost", "[::1]"]);
+  const issuerHost = normalizeAllowedHost(issuerBaseUrl);
+  if (issuerHost) {
+    hosts.add(issuerHost);
+  }
+
+  const vercelHost = normalizeAllowedHost(process.env.VERCEL_URL ?? "");
+  if (vercelHost) {
+    hosts.add(vercelHost);
+  }
+
+  const customHosts = (process.env.WAUTH_DEMO_ALLOWED_HOSTS ?? "")
+    .split(",")
+    .map((value) => normalizeAllowedHost(value))
+    .filter((value): value is string => typeof value === "string");
+  for (const host of customHosts) {
+    hosts.add(host);
+  }
+
+  return [...hosts];
 }
 
 function scopesForMockRp(page: MockRpPage): string[] {
@@ -1058,9 +1094,9 @@ function createServer(options: {
 
 export async function startMcpHttpServer(port = DEFAULT_PORT): Promise<void> {
   const app = buildMcpExpressApp();
-  app.listen(port, () => {
+  app.listen(port, DEFAULT_BIND_HOST, () => {
     // eslint-disable-next-line no-console
-    console.log(`WAUTH demo MCP server listening on port ${port}`);
+    console.log(`WAUTH demo MCP server listening on ${DEFAULT_BIND_HOST}:${port}`);
   });
 }
 
@@ -1068,9 +1104,13 @@ export function buildMcpExpressApp(options: {
   runtime?: DemoRuntime;
   issuerBaseUrl?: string;
 } = {}) {
-  const app = createMcpExpressApp({ host: "0.0.0.0" });
   const providedRuntime = options.runtime;
   const resolvedIssuerBaseUrl = trimTrailingSlash(options.issuerBaseUrl ?? issuerBase);
+  const allowedHosts = resolveAllowedHosts(resolvedIssuerBaseUrl);
+  const app = createMcpExpressApp({
+    host: DEFAULT_BIND_HOST,
+    allowedHosts
+  });
   let mockRpServicePromise: Promise<MockProtectedResourceService> | undefined;
   const transports: Record<string, StreamableHTTPServerTransport> = {};
   const mcpPaths = ["/mcp", "/api/mcp"] as const;

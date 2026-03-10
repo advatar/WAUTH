@@ -48,13 +48,17 @@ describe("normalizeKnownEnvVars", () => {
   it("trims newline and whitespace from known env vars", () => {
     const env: NodeJS.ProcessEnv = {
       WAUTH_DEMO_ISSUER: " https://wauth-demo.showntell.dev/api\n",
-      WAUTH_DEMO_HAPP_BASE_URL: " https://happ.showntell.dev/\n "
+      WAUTH_DEMO_HAPP_BASE_URL: " https://happ.showntell.dev/\n ",
+      WAUTH_DEMO_ALLOWED_HOSTS: " localhost, wauth-demo.showntell.dev \n",
+      WAUTH_DEMO_BIND_HOST: " 127.0.0.1 \n"
     };
 
     normalizeKnownEnvVars(env);
 
     expect(env.WAUTH_DEMO_ISSUER).toBe("https://wauth-demo.showntell.dev/api");
     expect(env.WAUTH_DEMO_HAPP_BASE_URL).toBe("https://happ.showntell.dev/");
+    expect(env.WAUTH_DEMO_ALLOWED_HOSTS).toBe("localhost, wauth-demo.showntell.dev");
+    expect(env.WAUTH_DEMO_BIND_HOST).toBe("127.0.0.1");
   });
 
   it("does not overwrite empty-trimmed values", () => {
