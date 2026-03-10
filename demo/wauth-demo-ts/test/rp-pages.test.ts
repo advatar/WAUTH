@@ -30,7 +30,7 @@ describe("mock RP landing pages", () => {
     const response = await fetch(`${baseUrl}/api`);
     expect(response.status).toBe(200);
     const html = await response.text();
-    expect(html).toContain("Mock relying parties with readable front doors.");
+    expect(html).toContain("Choose a secure service portal.");
     expect(html).toContain("/api/bank");
     expect(html).toContain("/api/hr");
     expect(html).toContain("/api/tax-office");
@@ -41,14 +41,19 @@ describe("mock RP landing pages", () => {
 
     const bankHtml = await fetch(`${baseUrl}/api/bank`).then((response) => response.text());
     expect(bankHtml).toContain("NorthRiver Bank Statement Vault");
+    expect(bankHtml).toContain("Additional verification required");
+    expect(bankHtml).toContain("Jan 2026 checking statement");
     expect(bankHtml).toContain("https://bank.demo.local/api/statement");
 
     const hrHtml = await fetch(`${baseUrl}/api/hr`).then((response) => response.text());
     expect(hrHtml).toContain("Juniper HR Income Records");
+    expect(hrHtml).toContain("2025 annual payroll summary");
     expect(hrHtml).toContain("https://employer.demo.local/api/income");
 
     const taxHtml = await fetch(`${baseUrl}/api/tax-office`).then((response) => response.text());
     expect(taxHtml).toContain("Civic Revenue Filing Gateway");
+    expect(taxHtml).toContain("Prepared 2025 return bundle");
+    expect(taxHtml).toContain("Security and access details");
     expect(taxHtml).toContain("https://irs.demo.local/api/submit");
   });
 

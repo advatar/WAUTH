@@ -24,7 +24,42 @@ Runnable implementation of the backlog storyline using the TypeScript SDK.
   - replay protection
 - Deterministic end-to-end tax scenario runner with timeline and receipts.
 
-## Run tests
+## Quick start
+
+From the repo root:
+
+```sh
+./scripts/wauth-demo.sh setup
+./scripts/wauth-demo.sh test
+./scripts/wauth-demo.sh serve
+```
+
+That starts the local MCP server and the RP landing pages on `http://127.0.0.1:3000`.
+
+Useful local URLs:
+- landing pages: `http://127.0.0.1:3000/`
+- MCP endpoint: `http://127.0.0.1:3000/mcp`
+- health check: `http://127.0.0.1:3000/healthz`
+
+The wrapper script keeps local runtime state under `.wauth-demo-runtime/` by default.
+
+## Wrapper script commands
+
+From the repo root:
+
+```sh
+./scripts/wauth-demo.sh help
+./scripts/wauth-demo.sh setup
+./scripts/wauth-demo.sh test
+./scripts/wauth-demo.sh scenario
+./scripts/wauth-demo.sh serve
+./scripts/wauth-demo.sh serve --handoff
+./scripts/wauth-demo.sh serve --local-happ
+./scripts/wauth-demo.sh serve --port 3333
+./scripts/wauth-demo.sh build-static
+```
+
+## Run tests directly
 
 ```sh
 cd demo/wauth-demo-ts
@@ -32,7 +67,7 @@ npm install
 npm test
 ```
 
-## Run scenario
+## Run scenario directly
 
 ```sh
 cd demo/wauth-demo-ts
@@ -40,13 +75,19 @@ npm install
 npm run demo
 ```
 
-## Run MCP server (for ChatGPT)
+## Run MCP server directly (for ChatGPT)
 
 ```sh
 cd demo/wauth-demo-ts
 npm install
 WAUTH_DEMO_ISSUER=http://127.0.0.1:3000 \
 npm run serve:mcp
+```
+
+If you do not want to remember the environment variables, use:
+
+```sh
+./scripts/wauth-demo.sh serve
 ```
 
 ### Local HAPP mode
@@ -68,6 +109,12 @@ To force the legacy redirect-only handoff instead of the local sidecar, set:
 WAUTH_DEMO_HAPP_MODE=handoff
 ```
 
+Or use the wrapper:
+
+```sh
+./scripts/wauth-demo.sh serve --handoff
+```
+
 Server endpoints:
 - `GET /` (mock RP directory landing page)
 - `POST /mcp` (MCP Streamable HTTP)
@@ -82,7 +129,7 @@ Server endpoints:
 - `GET /iproov/approve` (HAPP handoff page)
 - Vercel/serverless aliases: `/api`, `/api/bank`, `/api/hr`, `/api/employer`, `/api/tax-office`, `/api/irs`, `/api/mcp`, `/api/healthz`, `/api/jwks`, `/api/iproov/approve`, and the matching `/api/.../.well-known/...` RP metadata routes
 
-The RP landing pages are presentation-only surfaces that explain what each mocked RP protects and why WAUTH blocks the agent. The actual RP enforcement in the demo still happens in the in-memory scenario/runtime.
+The RP landing pages are product-style surfaces that show the protected action, the blocked state, and the verification boundary. The actual RP enforcement in the demo still happens in the in-memory scenario/runtime.
 
 ### Deploy to Vercel
 
@@ -122,6 +169,12 @@ Useful tools:
 - `aaif.wauth.metadata`
 
 ## Build static demo page
+
+```sh
+./scripts/wauth-demo.sh build-static
+```
+
+## Build static demo page directly
 
 ```sh
 cd demo/wauth-demo-ts
