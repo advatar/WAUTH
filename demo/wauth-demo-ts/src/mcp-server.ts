@@ -25,6 +25,16 @@ import {
   renderMockRpLandingPage,
   type MockRpPage
 } from "./rp-pages.js";
+import { runHttpTaxDemoScenario } from "./http-tax-scenario.js";
+import {
+  MockProtectedResourceService,
+  buildMockRpRequirements,
+  mockRpActionDefinitionForPath,
+  mockRpActionPathForPagePath,
+  mockRpAudienceForPath,
+  parseAuthorizationHeader,
+  toMockRpInput
+} from "./mock-rp.js";
 import { TaxWorkflowService, type PendingApproval as WorkflowPendingApproval } from "./workflow.js";
 import { WauthRequestService, type WauthPendingApproval } from "./wauth-state.js";
 import type { JsonValue } from "./sdk.js";
@@ -46,7 +56,6 @@ function trimTrailingSlash(value: string): string {
 }
 
 const issuerBase = trimTrailingSlash(DEFAULT_ISSUER);
-const approvalBaseUrl = `${issuerBase}/iproov/approve`;
 const happBaseUrl = trimTrailingSlash(DEFAULT_HAPP_BASE_URL);
 
 type DemoHappRuntime =
@@ -71,15 +80,22 @@ export interface DemoRuntime {
 let runtimePromise: Promise<DemoRuntime> | undefined;
 
 function createRuntime(): DemoRuntime {
-  return {
+  const resolvedApprovalBaseUrl = `${issuerBase}/iproov/approve`;
+  let runtime!: DemoRuntime;
+  runtime = {
     workflowService: new TaxWorkflowService({
       dataFilePath: process.env.WAUTH_DEMO_STATE_FILE,
-      approvalBaseUrl
+      approvalBaseUrl: resolvedApprovalBaseUrl,
+      scenarioRunner: (workflowId) => runHttpTaxDemoScenario({
+        issuerBaseUrl: issuerBase,
+        workflowId,
+        wauthService: runtime.wauthService
+      })
     }),
     wauthService: new WauthRequestService({
       issuer: issuerBase,
       dataFilePath: process.env.WAUTH_DEMO_WAUTH_STATE_FILE,
-      approvalBaseUrl
+      approvalBaseUrl: resolvedApprovalBaseUrl
     }),
     happ: DEFAULT_HAPP_MODE === "local-ref"
       ? {
@@ -91,6 +107,7 @@ function createRuntime(): DemoRuntime {
           baseUrl: happBaseUrl
         }
   };
+  return runtime;
 }
 
 async function getRuntime(): Promise<DemoRuntime> {
@@ -192,6 +209,11 @@ function absoluteUrl(origin: string, pathname: string): string {
   return new URL(pathname, `${trimTrailingSlash(origin)}/`).toString();
 }
 
+function absoluteRequestUrl(req: Request, fallbackBaseUrl: string): string {
+  const origin = externalOriginForRequest(req, fallbackBaseUrl);
+  return new URL(req.originalUrl || req.url, `${trimTrailingSlash(origin)}/`).toString();
+}
+
 function scopesForMockRp(page: MockRpPage): string[] {
   switch (page.slug) {
     case "bank":
@@ -203,30 +225,19 @@ function scopesForMockRp(page: MockRpPage): string[] {
   }
 }
 
-function actionsForMockRp(page: MockRpPage): string[] {
-  switch (page.slug) {
-    case "bank":
-      return ["read_statement"];
-    case "hr":
-      return ["read_income"];
-    case "tax-office":
-      return ["submit_return"];
-  }
-}
-
-function minPoHpForMockRp(page: MockRpPage): number {
-  return page.slug === "tax-office" ? 2 : 1;
-}
-
 function buildMockRpProtectedResourceMetadata(options: {
   page: MockRpPage;
   resourcePath: string;
   origin: string;
   authorizationServer: string;
 }): Record<string, JsonValue> {
+  const audience = mockRpAudienceForPath(options.origin, options.resourcePath);
+  if (!audience) {
+    throw new Error(`could not resolve audience for ${options.resourcePath}`);
+  }
   const requirementsUri = absoluteUrl(options.origin, `${options.resourcePath}${RP_REQUIREMENTS_SUFFIX}`);
   return {
-    resource: absoluteUrl(options.origin, options.resourcePath),
+    resource: audience,
     authorization_servers: [options.authorizationServer],
     bearer_methods_supported: ["header"],
     scopes_supported: scopesForMockRp(options.page),
@@ -240,28 +251,6 @@ function buildMockRpProtectedResourceMetadata(options: {
       requirements_uri: requirementsUri,
       documentation_uri: absoluteUrl(options.origin, options.resourcePath)
     }
-  };
-}
-
-function buildMockRpRequirements(page: MockRpPage): Record<string, JsonValue> {
-  return {
-    authorization_details: [
-      {
-        type: WAUTH_ACTION_DETAILS_TYPE,
-        actions: actionsForMockRp(page),
-        locations: [page.audience],
-        action_profile: page.actionProfile,
-        hash_alg: "S256",
-        assurance: {
-          min_pohp: minPoHpForMockRp(page)
-        },
-        envelope: {
-          max_uses: 1
-        }
-      }
-    ],
-    satisfy: "all",
-    max_capability_ttl_seconds: page.slug === "tax-office" ? 300 : 900
   };
 }
 
@@ -480,7 +469,8 @@ function immediateApprovedHappSession(options: {
 async function ensureWorkflowHappSession(
   runtime: DemoRuntime,
   workflowId: string,
-  approval: WorkflowPendingApproval
+  approval: WorkflowPendingApproval,
+  issuerAudience = issuerBase
 ): Promise<HappPendingSession | undefined> {
   if (runtime.happ.mode !== "local-ref") {
     return approval.happ;
@@ -490,7 +480,7 @@ async function ensureWorkflowHappSession(
   }
 
   const request = buildWorkflowHappApprovalRequest({
-    issuerAudience: issuerBase,
+    issuerAudience,
     workflowId,
     approvalId: approval.approvalId,
     stage: approval.stage,
@@ -519,7 +509,8 @@ async function ensureWorkflowHappSession(
 
 async function ensureWauthHappSession(
   runtime: DemoRuntime,
-  approval: WauthPendingApproval
+  approval: WauthPendingApproval,
+  issuerAudience = issuerBase
 ): Promise<HappPendingSession | undefined> {
   if (runtime.happ.mode !== "local-ref") {
     return approval.happ;
@@ -534,7 +525,7 @@ async function ensureWauthHappSession(
   }
 
   const request = buildWauthHappApprovalRequest({
-    issuerAudience: issuerBase,
+    issuerAudience,
     approvalId: approval.approvalId,
     requestId: requestState.requestId,
     wauthRequired: requestState.wauthRequired,
@@ -575,7 +566,11 @@ async function approvalStatusForSession(
   return snapshot.status;
 }
 
-async function approvalStatusPayload(runtime: DemoRuntime, approvalId: string): Promise<Record<string, JsonValue>> {
+async function approvalStatusPayload(
+  runtime: DemoRuntime,
+  approvalId: string,
+  issuerAudience = issuerBase
+): Promise<Record<string, JsonValue>> {
   const pending = await findPendingApproval(runtime, approvalId);
   if (pending.kind === "none") {
     return { status: "not_found" };
@@ -586,8 +581,8 @@ async function approvalStatusPayload(runtime: DemoRuntime, approvalId: string): 
   }
 
   const happ = pending.kind === "workflow"
-    ? await ensureWorkflowHappSession(runtime, pending.workflowId, pending.approval)
-    : await ensureWauthHappSession(runtime, pending.approval);
+    ? await ensureWorkflowHappSession(runtime, pending.workflowId, pending.approval, issuerAudience)
+    : await ensureWauthHappSession(runtime, pending.approval, issuerAudience);
   if (!happ) {
     return { status: "unknown" };
   }
@@ -623,7 +618,7 @@ async function completeWorkflowApprovalWithHapp(
     };
   }
 
-  const happ = await ensureWorkflowHappSession(runtime, workflowId, approval);
+  const happ = await ensureWorkflowHappSession(runtime, workflowId, approval, issuerBaseUrl);
   if (!happ) {
     return {
       status: "pending",
@@ -695,7 +690,7 @@ async function completeWauthApprovalWithHapp(
     };
   }
 
-  const happ = await ensureWauthHappSession(runtime, approval);
+  const happ = await ensureWauthHappSession(runtime, approval, issuerBaseUrl);
   if (!happ) {
     return {
       status: "pending",
@@ -745,7 +740,12 @@ async function completeWauthApprovalWithHapp(
   };
 }
 
-function createServer(): McpServer {
+function createServer(options: {
+  issuerBaseUrl?: string;
+  getRuntime?: () => Promise<DemoRuntime>;
+} = {}): McpServer {
+  const resolvedIssuerBaseUrl = trimTrailingSlash(options.issuerBaseUrl ?? issuerBase);
+  const loadRuntime = options.getRuntime ?? getRuntime;
   const server = new McpServer({
     name: "wauth-demo-mcp",
     version: "0.1.0"
@@ -761,16 +761,16 @@ function createServer(): McpServer {
       }
     },
     async ({ workflowId }, extra) => {
-      const runtime = await getRuntime();
+      const runtime = await loadRuntime();
       const result = await runtime.workflowService.runTaxFiling(extra.sessionId, workflowId);
 
       if (result.pendingApproval) {
         if (runtime.happ.mode === "local-ref") {
-          await ensureWorkflowHappSession(runtime, result.workflowId, result.pendingApproval);
+          await ensureWorkflowHappSession(runtime, result.workflowId, result.pendingApproval, resolvedIssuerBaseUrl);
         }
 
         const approvalUrl = buildApprovalLandingUrl({
-          issuerBaseUrl: issuerBase,
+          issuerBaseUrl: resolvedIssuerBaseUrl,
           approvalId: result.pendingApproval.approvalId,
           requestPath: MCP_REQUEST_PATH
         });
@@ -815,7 +815,7 @@ function createServer(): McpServer {
       }
     },
     async ({ workflowId }, extra) => {
-      const runtime = await getRuntime();
+      const runtime = await loadRuntime();
       const state = await runtime.workflowService.status(extra.sessionId, workflowId);
       const payload = state ?? { status: "not_found" };
       return {
@@ -835,7 +835,7 @@ function createServer(): McpServer {
       }
     },
     async ({ workflowId }, extra) => {
-      const runtime = await getRuntime();
+      const runtime = await loadRuntime();
       const resolvedWorkflowId = await runtime.workflowService.resolveSessionWorkflowId(extra.sessionId, workflowId);
       const approvals = resolvedWorkflowId
         ? await runtime.workflowService.listPendingApprovals(resolvedWorkflowId)
@@ -845,7 +845,7 @@ function createServer(): McpServer {
         approvals: approvals.map((approval) => ({
           ...approval,
           approvalUrl: buildApprovalLandingUrl({
-            issuerBaseUrl: issuerBase,
+            issuerBaseUrl: resolvedIssuerBaseUrl,
             approvalId: approval.approvalId,
             requestPath: MCP_REQUEST_PATH
           })
@@ -870,7 +870,7 @@ function createServer(): McpServer {
       }
     },
     async ({ approvalId, workflowId }, extra) => {
-      const runtime = await getRuntime();
+      const runtime = await loadRuntime();
       const result = await runtime.workflowService.approveAndAdvanceBySession(extra.sessionId, approvalId, workflowId);
       const payload = {
         workflowId: result.workflowId,
@@ -880,7 +880,7 @@ function createServer(): McpServer {
           ? {
               ...result.pendingApproval,
               approvalUrl: buildApprovalLandingUrl({
-                issuerBaseUrl: issuerBase,
+                issuerBaseUrl: resolvedIssuerBaseUrl,
                 approvalId: result.pendingApproval.approvalId,
                 requestPath: MCP_REQUEST_PATH
               })
@@ -905,7 +905,7 @@ function createServer(): McpServer {
       }
     },
     async ({ workflowId }, extra) => {
-      const runtime = await getRuntime();
+      const runtime = await loadRuntime();
       const resolvedWorkflowId = await runtime.workflowService.resolveSessionWorkflowId(extra.sessionId, workflowId);
       const timeline = resolvedWorkflowId
         ? await runtime.workflowService.timeline(resolvedWorkflowId)
@@ -933,7 +933,7 @@ function createServer(): McpServer {
       }
     },
     async ({ workflowId, requestId, all }) => {
-      const runtime = await getRuntime();
+      const runtime = await loadRuntime();
       if (all) {
         await runtime.workflowService.reset();
         await runtime.wauthService.reset();
@@ -975,7 +975,7 @@ function createServer(): McpServer {
       }
     },
     async ({ requestId, wauthRequired, actionInstance, agentIdentity }, extra) => {
-      const runtime = await getRuntime();
+      const runtime = await loadRuntime();
       const request = await runtime.wauthService.request(extra.sessionId, {
         requestId,
         wauthRequired: wauthRequired as Record<string, JsonValue>,
@@ -985,11 +985,11 @@ function createServer(): McpServer {
 
       if (request.pendingApproval) {
         if (runtime.happ.mode === "local-ref") {
-          await ensureWauthHappSession(runtime, request.pendingApproval);
+          await ensureWauthHappSession(runtime, request.pendingApproval, resolvedIssuerBaseUrl);
         }
 
         const approvalUrl = buildApprovalLandingUrl({
-          issuerBaseUrl: issuerBase,
+          issuerBaseUrl: resolvedIssuerBaseUrl,
           approvalId: request.pendingApproval.approvalId,
           requestPath: MCP_REQUEST_PATH
         });
@@ -1027,7 +1027,7 @@ function createServer(): McpServer {
       }
     },
     async ({ ref }) => {
-      const runtime = await getRuntime();
+      const runtime = await loadRuntime();
       const artifact = await runtime.wauthService.getArtifact(ref);
       return {
         content: [{ type: "text", text: toolText(artifact) }],
@@ -1044,7 +1044,7 @@ function createServer(): McpServer {
       inputSchema: {}
     },
     async () => {
-      const runtime = await getRuntime();
+      const runtime = await loadRuntime();
       const metadata = await runtime.wauthService.metadata();
       return {
         content: [{ type: "text", text: toolText(metadata) }],
@@ -1071,6 +1071,7 @@ export function buildMcpExpressApp(options: {
   const app = createMcpExpressApp({ host: "0.0.0.0" });
   const providedRuntime = options.runtime;
   const resolvedIssuerBaseUrl = trimTrailingSlash(options.issuerBaseUrl ?? issuerBase);
+  let mockRpServicePromise: Promise<MockProtectedResourceService> | undefined;
   const transports: Record<string, StreamableHTTPServerTransport> = {};
   const mcpPaths = ["/mcp", "/api/mcp"] as const;
   const configPaths = [
@@ -1102,11 +1103,37 @@ export function buildMcpExpressApp(options: {
   const mockRpSurfacePaths = mockRpPaths.filter((path) => path !== "/" && path !== "/api");
   const mockRpPrmPaths = mockRpSurfacePaths.map((path) => `${path}${RP_PRM_SUFFIX}`);
   const mockRpRequirementsPaths = mockRpSurfacePaths.map((path) => `${path}${RP_REQUIREMENTS_SUFFIX}`);
+  const mockRpActionPaths = [
+    ...new Set(
+      mockRpSurfacePaths
+        .map((path) => mockRpActionPathForPagePath(path))
+        .filter((path): path is string => typeof path === "string")
+    )
+  ];
+
+  async function getResolvedRuntime(): Promise<DemoRuntime> {
+    return providedRuntime ?? getRuntime();
+  }
+
+  async function getMockRpService(): Promise<MockProtectedResourceService> {
+    if (!mockRpServicePromise) {
+      mockRpServicePromise = (async () => {
+        const runtime = await getResolvedRuntime();
+        const jwks = await runtime.wauthService.jwks();
+        return new MockProtectedResourceService({
+          issuer: resolvedIssuerBaseUrl,
+          jwks: jwks as { keys: Record<string, JsonValue>[] }
+        });
+      })();
+    }
+    return mockRpServicePromise;
+  }
 
   for (const routePath of mockRpPaths) {
     app.get(routePath, (req: Request, res: Response) => {
+      const origin = externalOriginForRequest(req, resolvedIssuerBaseUrl);
       if (isMockRpDirectoryPath(req.path)) {
-        res.send(renderMockRpDirectoryPage(req.path));
+        res.send(renderMockRpDirectoryPage(req.path, origin));
         return;
       }
 
@@ -1116,7 +1143,7 @@ export function buildMcpExpressApp(options: {
         return;
       }
 
-      res.send(renderMockRpLandingPage(page, req.path));
+      res.send(renderMockRpLandingPage(page, req.path, origin));
     });
   }
 
@@ -1158,8 +1185,68 @@ export function buildMcpExpressApp(options: {
         return;
       }
 
-      res.json(buildMockRpRequirements(page));
+      const origin = externalOriginForRequest(req, resolvedIssuerBaseUrl);
+      const requirements = buildMockRpRequirements({
+        origin,
+        resourcePath
+      });
+      if (!requirements) {
+        res.status(404).json({ error: "not_found" });
+        return;
+      }
+      res.json(requirements);
     });
+  }
+
+  for (const routePath of mockRpActionPaths) {
+    const definition = mockRpActionDefinitionForPath(routePath);
+    if (!definition) {
+      continue;
+    }
+
+    const handler = async (req: Request, res: Response) => {
+      const rpService = await getMockRpService();
+      const queryInput = toMockRpInput(req.query as Record<string, unknown>);
+      const bodyInput = toMockRpInput(toRecord(req.body));
+      const authToken = parseAuthorizationHeader(req.get("authorization") ?? undefined);
+      const dpopProof = req.get("dpop") ?? undefined;
+      const result = await rpService.verify({
+        pathname: req.path,
+        requestUrl: absoluteRequestUrl(req, resolvedIssuerBaseUrl),
+        method: req.method,
+        input: {
+          ...queryInput,
+          ...bodyInput
+        },
+        auth: authToken && dpopProof
+          ? {
+              token: authToken,
+              dpopProof
+            }
+          : undefined
+      });
+
+      if (!result.ok || !result.receipt) {
+        res.status(result.status).json({
+          ...(result.wauthRequired ?? { error: "wauth_required" }),
+          verification_errors: result.verificationErrors
+        });
+        return;
+      }
+
+      res.status(200).json({
+        ok: true,
+        rp: result.receipt.rp,
+        receipt: result.receipt,
+        data: result.data
+      });
+    };
+
+    if (definition.method === "POST") {
+      app.post(routePath, handler);
+    } else {
+      app.get(routePath, handler);
+    }
   }
 
   for (const routePath of mcpPaths) {
@@ -1179,7 +1266,10 @@ export function buildMcpExpressApp(options: {
             }
           });
 
-          const server = createServer();
+          const server = createServer({
+            issuerBaseUrl: resolvedIssuerBaseUrl,
+            getRuntime: getResolvedRuntime
+          });
           await server.connect(transport);
           await transport.handleRequest(req, res, req.body);
           return;
@@ -1286,8 +1376,8 @@ export function buildMcpExpressApp(options: {
 
       if (runtime.happ.mode === "local-ref") {
         const happ = pending.kind === "workflow"
-          ? await ensureWorkflowHappSession(runtime, pending.workflowId, pending.approval)
-          : await ensureWauthHappSession(runtime, pending.approval);
+          ? await ensureWorkflowHappSession(runtime, pending.workflowId, pending.approval, resolvedIssuerBaseUrl)
+          : await ensureWauthHappSession(runtime, pending.approval, resolvedIssuerBaseUrl);
         if (!happ) {
           res.status(500).send(approvalPage({
             title: "Approval unavailable",
@@ -1342,7 +1432,7 @@ export function buildMcpExpressApp(options: {
         return;
       }
 
-      const payload = await approvalStatusPayload(runtime, approvalId);
+      const payload = await approvalStatusPayload(runtime, approvalId, resolvedIssuerBaseUrl);
       res.json(payload);
     });
   }

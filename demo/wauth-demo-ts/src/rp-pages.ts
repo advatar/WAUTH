@@ -1,3 +1,5 @@
+import { mockRpAudienceForPath } from "./mock-rp.js";
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -214,16 +216,20 @@ function mockRpDirectoryHref(requestPath: string): string {
   return requestPath.startsWith("/api") ? "/api" : "/";
 }
 
-export function renderMockRpDirectoryPage(requestPath: string): string {
+export function renderMockRpDirectoryPage(requestPath: string, origin?: string): string {
   const cards = MOCK_RP_PAGES
     .map((page) => {
+      const href = mockRpPageHref(page.slug, requestPath);
+      const audience = origin
+        ? mockRpAudienceForPath(origin, href) ?? page.audience
+        : page.audience;
       return `<a class="rp-card" href="${mockRpPageHref(page.slug, requestPath)}">
   <span class="card-tag">${escapeHtml(page.eyebrow)}</span>
   <h2>${escapeHtml(page.title)}</h2>
   <p>${escapeHtml(page.summary)}</p>
   <div class="card-meta">
     <span>${escapeHtml(page.operatingState)}</span>
-    <code>${escapeHtml(page.audience)}</code>
+    <code>${escapeHtml(audience)}</code>
   </div>
 </a>`;
     })
@@ -408,7 +414,11 @@ export function renderMockRpDirectoryPage(requestPath: string): string {
 </html>`;
 }
 
-export function renderMockRpLandingPage(page: MockRpPage, requestPath: string): string {
+export function renderMockRpLandingPage(page: MockRpPage, requestPath: string, origin?: string): string {
+  const audience = origin
+    ? mockRpAudienceForPath(origin, requestPath) ?? page.audience
+    : page.audience;
+
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -818,7 +828,7 @@ export function renderMockRpLandingPage(page: MockRpPage, requestPath: string): 
             <div class="diag-body">
               <div>
                 <span class="section-label">Audience URI</span>
-                <div class="mono">${escapeHtml(page.audience)}</div>
+                <div class="mono">${escapeHtml(audience)}</div>
               </div>
               <div>
                 <span class="section-label">Action profile</span>

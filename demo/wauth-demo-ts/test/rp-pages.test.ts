@@ -43,18 +43,18 @@ describe("mock RP landing pages", () => {
     expect(bankHtml).toContain("NorthRiver Bank Statement Vault");
     expect(bankHtml).toContain("Additional verification required");
     expect(bankHtml).toContain("Jan 2026 checking statement");
-    expect(bankHtml).toContain("https://bank.demo.local/api/statement");
+    expect(bankHtml).toContain(`${baseUrl}/api/bank/api/statement`);
 
     const hrHtml = await fetch(`${baseUrl}/api/hr`).then((response) => response.text());
     expect(hrHtml).toContain("Juniper HR Income Records");
     expect(hrHtml).toContain("2025 annual payroll summary");
-    expect(hrHtml).toContain("https://employer.demo.local/api/income");
+    expect(hrHtml).toContain(`${baseUrl}/api/hr/api/income`);
 
     const taxHtml = await fetch(`${baseUrl}/api/tax-office`).then((response) => response.text());
     expect(taxHtml).toContain("Civic Revenue Filing Gateway");
     expect(taxHtml).toContain("Prepared 2025 return bundle");
     expect(taxHtml).toContain("Security and access details");
-    expect(taxHtml).toContain("https://irs.demo.local/api/submit");
+    expect(taxHtml).toContain(`${baseUrl}/api/tax-office/api/submit`);
   });
 
   it("serves protected resource metadata and requirements templates for mock RPs", async () => {
@@ -63,7 +63,7 @@ describe("mock RP landing pages", () => {
     const bankPrmResponse = await fetch(`${baseUrl}/api/bank/.well-known/oauth-protected-resource`);
     expect(bankPrmResponse.status).toBe(200);
     const bankPrm = await bankPrmResponse.json();
-    expect(bankPrm.resource).toBe(`${baseUrl}/api/bank`);
+    expect(bankPrm.resource).toBe(`${baseUrl}/api/bank/api/statement`);
     expect(bankPrm.wauth.supported).toBe(true);
     expect(bankPrm.wauth.profiles_supported).toContain("aaif.wauth.profile.rp-protected-resource-metadata/v0.1");
     expect(bankPrm.wauth.profiles_supported).toContain("aaif.wauth.profile.rp-requirements-signaling/v0.1");
@@ -74,13 +74,13 @@ describe("mock RP landing pages", () => {
     const bankRequirements = await bankRequirementsResponse.json();
     expect(bankRequirements.max_capability_ttl_seconds).toBe(900);
     expect(bankRequirements.authorization_details[0].action_profile).toBe("aaif.wauth.action.bank.read_statement/v0.1");
-    expect(bankRequirements.authorization_details[0].locations).toEqual(["https://bank.demo.local/api/statement"]);
+    expect(bankRequirements.authorization_details[0].locations).toEqual([`${baseUrl}/api/bank/api/statement`]);
     expect(bankRequirements.authorization_details[0].action_hash).toBeUndefined();
 
     const taxPrmResponse = await fetch(`${baseUrl}/api/irs/.well-known/oauth-protected-resource`);
     expect(taxPrmResponse.status).toBe(200);
     const taxPrm = await taxPrmResponse.json();
-    expect(taxPrm.resource).toBe(`${baseUrl}/api/irs`);
+    expect(taxPrm.resource).toBe(`${baseUrl}/api/irs/api/submit`);
 
     const taxRequirements = await fetch(taxPrm.wauth.requirements_uri).then((response) => response.json());
     expect(taxRequirements.max_capability_ttl_seconds).toBe(300);

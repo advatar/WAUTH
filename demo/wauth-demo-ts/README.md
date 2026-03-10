@@ -121,6 +121,9 @@ Server endpoints:
 - `GET /bank` (mock bank landing page)
 - `GET /hr` / `GET /employer` (mock HR system landing page)
 - `GET /tax-office` / `GET /irs` (mock tax office landing page)
+- `GET /bank/api/statement` (protected statement resource)
+- `GET /hr/api/income` / `GET /employer/api/income` (protected payroll evidence resource)
+- `POST /tax-office/api/submit` / `POST /irs/api/submit` (protected filing submission resource)
 - `GET /bank/.well-known/oauth-protected-resource` and equivalent RP path variants
 - `GET /bank/.well-known/wauth-requirements` and equivalent RP path variants
 - `GET /healthz`
@@ -129,7 +132,7 @@ Server endpoints:
 - `GET /iproov/approve` (HAPP handoff page)
 - Vercel/serverless aliases: `/api`, `/api/bank`, `/api/hr`, `/api/employer`, `/api/tax-office`, `/api/irs`, `/api/mcp`, `/api/healthz`, `/api/jwks`, `/api/iproov/approve`, and the matching `/api/.../.well-known/...` RP metadata routes
 
-The RP landing pages are product-style surfaces that show the protected action, the blocked state, and the verification boundary. The actual RP enforcement in the demo still happens in the in-memory scenario/runtime.
+The RP landing pages are product-style surfaces that show the protected action, the blocked state, and the verification boundary. The MCP tax workflow now calls the actual mock RP HTTP endpoints above; the standalone CLI scenario remains the deterministic in-memory version used for the static artifact and protocol-only walkthrough.
 
 ### Deploy to Vercel
 

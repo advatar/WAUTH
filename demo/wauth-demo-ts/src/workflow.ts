@@ -49,6 +49,7 @@ const DEFAULT_APPROVAL_BASE_URL = "https://iproov.demo.local/approve";
 export interface TaxWorkflowServiceOptions {
   dataFilePath?: string;
   approvalBaseUrl?: string;
+  scenarioRunner?: (workflowId: string) => Promise<TaxDemoRunResult>;
 }
 
 function nowIso(): string {
@@ -80,15 +81,18 @@ export class TaxWorkflowService {
   private readonly sessionToWorkflow = new Map<string, string>();
   private readonly dataFilePath: string;
   private readonly approvalBaseUrl: string;
+  private readonly scenarioRunner: (workflowId: string) => Promise<TaxDemoRunResult>;
   private loadPromise: Promise<void>;
 
   constructor(options: string | TaxWorkflowServiceOptions = DEFAULT_DATA_FILE) {
     if (typeof options === "string") {
       this.dataFilePath = options;
       this.approvalBaseUrl = DEFAULT_APPROVAL_BASE_URL;
+      this.scenarioRunner = () => runTaxDemoScenario();
     } else {
       this.dataFilePath = options.dataFilePath ?? DEFAULT_DATA_FILE;
       this.approvalBaseUrl = options.approvalBaseUrl ?? DEFAULT_APPROVAL_BASE_URL;
+      this.scenarioRunner = options.scenarioRunner ?? (() => runTaxDemoScenario());
     }
     this.loadPromise = this.load();
   }
@@ -254,7 +258,7 @@ export class TaxWorkflowService {
         } as Record<string, JsonValue>
       });
 
-      const result = await runTaxDemoScenario();
+      const result = await this.scenarioRunner(workflowId);
       state.result = result;
       state.status = "complete";
       state.updatedAt = nowIso();
