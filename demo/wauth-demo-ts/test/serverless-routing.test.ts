@@ -66,7 +66,10 @@ describe("normalizeKnownEnvVars", () => {
       WAUTH_DEMO_ISSUER: " https://wauth-demo.showntell.dev/api\n",
       WAUTH_DEMO_HAPP_BASE_URL: " https://happ.showntell.dev/\n ",
       WAUTH_DEMO_ALLOWED_HOSTS: " localhost, wauth-demo.showntell.dev \n",
-      WAUTH_DEMO_BIND_HOST: " 127.0.0.1 \n"
+      WAUTH_DEMO_BIND_HOST: " 127.0.0.1 \n",
+      VERCEL_URL: " wauth-demo-preview-advatars-projects.vercel.app \n",
+      VERCEL_BRANCH_URL: " wauth-demo-git-main-advatars-projects.vercel.app \n",
+      VERCEL_PROJECT_PRODUCTION_URL: " wauth-demo-ts.vercel.app \n"
     };
 
     normalizeKnownEnvVars(env);
@@ -75,6 +78,9 @@ describe("normalizeKnownEnvVars", () => {
     expect(env.WAUTH_DEMO_HAPP_BASE_URL).toBe("https://happ.showntell.dev/");
     expect(env.WAUTH_DEMO_ALLOWED_HOSTS).toBe("localhost, wauth-demo.showntell.dev");
     expect(env.WAUTH_DEMO_BIND_HOST).toBe("127.0.0.1");
+    expect(env.VERCEL_URL).toBe("wauth-demo-preview-advatars-projects.vercel.app");
+    expect(env.VERCEL_BRANCH_URL).toBe("wauth-demo-git-main-advatars-projects.vercel.app");
+    expect(env.VERCEL_PROJECT_PRODUCTION_URL).toBe("wauth-demo-ts.vercel.app");
   });
 
   it("does not overwrite empty-trimmed values", () => {

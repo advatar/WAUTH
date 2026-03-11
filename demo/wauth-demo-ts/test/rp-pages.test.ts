@@ -13,6 +13,14 @@ afterEach(async () => {
   })));
 });
 
+function restoreEnv(key: string, value: string | undefined): void {
+  if (typeof value === "string") {
+    process.env[key] = value;
+    return;
+  }
+  delete process.env[key];
+}
+
 async function listen(): Promise<string> {
   const server = createServer(buildMcpExpressApp());
   servers.push(server);
@@ -118,5 +126,44 @@ describe("mock RP landing pages", () => {
 
     expect(result.statusCode).toBe(403);
     expect(result.body).toContain("Invalid Host");
+  });
+
+  it("accepts the Vercel production alias host when provided by runtime env", async () => {
+    const previousProjectProductionUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+    process.env.VERCEL_PROJECT_PRODUCTION_URL = "wauth-demo-ts.vercel.app";
+
+    try {
+      const baseUrl = await listen();
+      const url = new URL(`${baseUrl}/healthz`);
+
+      const result = await new Promise<{ statusCode?: number; body: string }>((resolve, reject) => {
+        const req = request({
+          host: url.hostname,
+          port: Number(url.port),
+          path: url.pathname,
+          method: "GET",
+          headers: {
+            host: "wauth-demo-ts.vercel.app"
+          }
+        }, (res) => {
+          let body = "";
+          res.setEncoding("utf8");
+          res.on("data", (chunk) => {
+            body += chunk;
+          });
+          res.on("end", () => resolve({
+            statusCode: res.statusCode,
+            body
+          }));
+        });
+        req.on("error", reject);
+        req.end();
+      });
+
+      expect(result.statusCode).toBe(200);
+      expect(result.body).toContain("\"ok\":true");
+    } finally {
+      restoreEnv("VERCEL_PROJECT_PRODUCTION_URL", previousProjectProductionUrl);
+    }
   });
 });

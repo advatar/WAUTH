@@ -149,7 +149,7 @@ Set environment variable in Vercel project:
 - `WAUTH_DEMO_STATE_FILE=/tmp/wauth-demo/workflow-state.json`
 - `WAUTH_DEMO_WAUTH_STATE_FILE=/tmp/wauth-demo/wauth-state.json`
 
-The server now enables explicit Host header validation. `localhost`, `127.0.0.1`, the issuer hostname, and `VERCEL_URL` are allowed automatically. Add any extra deployment domains through `WAUTH_DEMO_ALLOWED_HOSTS`.
+The server now enables explicit Host header validation. `localhost`, `127.0.0.1`, the issuer hostname, and Vercel hostnames exposed through `VERCEL_URL`, `VERCEL_BRANCH_URL`, and `VERCEL_PROJECT_PRODUCTION_URL` are allowed automatically. Add any extra deployment domains through `WAUTH_DEMO_ALLOWED_HOSTS`.
 
 Use MCP endpoint in ChatGPT:
 - `https://wauth-demo.showntell.dev/api/mcp`

@@ -227,16 +227,19 @@ function normalizeAllowedHost(value: string): string | undefined {
   }
 }
 
+function addAllowedHost(hosts: Set<string>, value: string | undefined): void {
+  const normalized = normalizeAllowedHost(value ?? "");
+  if (normalized) {
+    hosts.add(normalized);
+  }
+}
+
 function resolveAllowedHosts(issuerBaseUrl: string): string[] {
   const hosts = new Set<string>(["127.0.0.1", "localhost", "[::1]"]);
-  const issuerHost = normalizeAllowedHost(issuerBaseUrl);
-  if (issuerHost) {
-    hosts.add(issuerHost);
-  }
+  addAllowedHost(hosts, issuerBaseUrl);
 
-  const vercelHost = normalizeAllowedHost(process.env.VERCEL_URL ?? "");
-  if (vercelHost) {
-    hosts.add(vercelHost);
+  for (const key of ["VERCEL_URL", "VERCEL_BRANCH_URL", "VERCEL_PROJECT_PRODUCTION_URL"] as const) {
+    addAllowedHost(hosts, process.env[key]);
   }
 
   const customHosts = (process.env.WAUTH_DEMO_ALLOWED_HOSTS ?? "")

@@ -5,7 +5,13 @@ import { dirname, resolve } from "node:path";
 import { SignJWT, type JWTPayload } from "jose";
 
 import type { HappConsentCredentialEnvelope, HappPendingSession } from "./happ-local-ref.js";
-import { computeActionHash, type JsonValue, type WauthArtifact, type WauthResultEnvelope } from "./sdk.js";
+import {
+  computeActionHash,
+  type JsonValue,
+  type WauthArtifact,
+  type WauthMetadataEnvelope,
+  type WauthResultEnvelope
+} from "./sdk.js";
 
 const DEFAULT_DATA_FILE = resolve(process.cwd(), ".wauth-demo", "wauth-state.json");
 const DEFAULT_APPROVAL_BASE_URL = "https://iproov.demo.local/approve";
@@ -445,7 +451,7 @@ export class WauthRequestService {
     throw new Error(`unknown artifact ref: ${ref}`);
   }
 
-  async metadata(): Promise<Record<string, JsonValue>> {
+  async metadata(): Promise<WauthMetadataEnvelope> {
     await this.ready();
     return {
       issuer: this.issuer,
