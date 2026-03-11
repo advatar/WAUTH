@@ -35,6 +35,22 @@ describe("prepareRequestUrl", () => {
     expect(prepared.wasRewritten).toBe(true);
   });
 
+  it("rewrites root-served RP pages from the vercel catch-all", () => {
+    const prepared = prepareRequestUrl("/api?__path=/bank&foo=1");
+
+    expect(prepared.requestPath).toBe("/bank");
+    expect(prepared.requestUrl).toBe("/bank?foo=1");
+    expect(prepared.wasRewritten).toBe(true);
+  });
+
+  it("rewrites the site root from the vercel catch-all", () => {
+    const prepared = prepareRequestUrl("/api?__path=/");
+
+    expect(prepared.requestPath).toBe("/");
+    expect(prepared.requestUrl).toBe("/");
+    expect(prepared.wasRewritten).toBe(true);
+  });
+
   it("returns unchanged URL for non-aliased paths", () => {
     const prepared = prepareRequestUrl("/api/mcp?x=1");
 
